@@ -1,16 +1,29 @@
-FROM golang:1.22.0
-ENV TZ=Asia/Tokyo
+# syntax=docker/dockerfile:1
 
-ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=amd64
-ENV ROOTPATH=/go/app
+# ベースイメージを指定
+FROM golang:1.22-alpine AS builder
 
-WORKDIR ${ROOTPATH}
+# 作業ディレクトリを設定
+WORKDIR /app
 
-RUN go install github.com/cosmtrek/air@v1.40.0
-COPY go.mod go.sum .air.toml ./
+# Goの依存関係をコピー
+COPY go.mod go.sum ./
 RUN go mod download
 
-EXPOSE 80
-#CMD ["air", "-c", ".air.toml"]
+# ソースコードをコピー
+COPY . .
+
+# Goのバイナリをビルド
+RUN go build -o main ./src/main.go
+
+# 実行ステージ
+FROM alpine:latest
+
+# 必要なバイナリのみをコピー
+COPY --from=builder /app/main /main
+
+# ポートを開放
+EXPOSE 8081
+
+# コンテナが起動時に実行するコマンド
+CMD ["/main"]

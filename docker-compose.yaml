@@ -1,20 +1,21 @@
 version: "3.8"
 
 services:
-  # client:
-  #   build:
-  #     context: ./client
-  #     dockerfile: Dockerfile
-  #   tty: true
-  #   stdin_open: true
-  #   ports:
-  #     - 3000:5173
-  #   volumes:
-  #     - type: bind
-  #       source: "client/src"
-  #       target: "/usr/app/src"
-  #   depends_on:
-  #     - server
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    tty: true
+    stdin_open: true
+    ports:
+      - 3000:3000
+    volumes:
+      - type: bind
+        source: "client/src"
+        target: "/usr/app/src"
+    command: npm run dev
+    depends_on:
+      - server
 
   server:
     build:
@@ -26,5 +27,6 @@ services:
       - 8081:8081
     volumes:
       - type: bind
-        source: server/src
-        target: /go/app/src
+        source: "server/src"
+        target: "/go/app/src"
+    command: /main
