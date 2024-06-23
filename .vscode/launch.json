@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Frontend Debug",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}/client",
+            "serverReadyAction": {
+                "pattern": "- Local:.+(https?://.+)",
+                "uriFormat": "%s",
+                "action": "debugWithChrome"
+            }
+        },
+        {
+            "name": "Backend Debug",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/server/src/main.go",
+            "env": {},
+            "args": [],
+            "showLog": true,
+            "trace": "verbose",
+            "dlvToolPath": "${workspaceFolder}/bin/dlv"
+        },
+    ],
+    "compounds": [
+        {
+            "name": "Full Debug",
+            "configurations": ["Backend Debug", "Frontend Debug"]
+        }
+    ]
+}
