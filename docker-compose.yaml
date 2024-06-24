@@ -29,4 +29,4 @@ services:
       - type: bind
         source: "${PWD}/server/src"
         target: "/go/app/src"
-    command: /main
+    command: /app/main
