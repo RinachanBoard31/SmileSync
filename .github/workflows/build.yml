@@ -35,8 +35,8 @@ jobs:
 
       - name: Run tests
         run: |
-          docker-compose exec client npm run test
-          docker-compose exec server go test ./...
+          docker-compose exec -T client npm run test
+          docker-compose exec -T server sh -c "cd /app/src && go test ./..."
 
       - name: Shut down services
         run: docker-compose down
