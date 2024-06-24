@@ -17,13 +17,16 @@ COPY . .
 RUN go build -o main ./src/main.go
 
 # 実行ステージ
-FROM alpine:latest
+FROM golang:1.22-alpine
 
-# 必要なバイナリのみをコピー
-COPY --from=builder /app/main /main
+# 作業ディレクトリを設定
+WORKDIR /app
+
+# 必要なファイルをコピー
+COPY --from=builder /app/main /app/main
 
 # ポートを開放
 EXPOSE 8081
 
 # コンテナが起動時に実行するコマンド
-CMD ["/main"]
+CMD ["/app/main"]
