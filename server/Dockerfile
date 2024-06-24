@@ -23,7 +23,7 @@ FROM golang:1.22-alpine
 WORKDIR /app
 
 # 必要なファイルをコピー
-COPY --from=builder /app/main /app/main
+COPY --from=builder /app ./
 
 # ポートを開放
 EXPOSE 8081
