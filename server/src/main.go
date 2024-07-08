@@ -23,6 +23,7 @@ package main
 // }
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,9 +41,11 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+// GoでJSONエンコードを行う場合、フィールド名はエクスポート（大文字で始まる必要があります）されている必要がある
 type Message struct {
-	timestamp time.Time
-	message   string
+	Timestamp time.Time `json:"timestamp"`
+	ClientId  string    `json:"clientId"`
+	Text      string    `json:"text"`
 }
 
 type Server struct {
@@ -60,6 +63,10 @@ func NewServer() *Server {
 	}
 }
 
+func ConvertHHMMSS(t time.Time) string {
+	return t.Format("15:04:05") // このレイアウトって具体的で良いらしい
+}
+
 func (s *Server) handleClients(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -74,7 +81,7 @@ func (s *Server) handleClients(w http.ResponseWriter, r *http.Request) {
 
 	// これまでのメッセージ履歴を新しいClientに送信
 	for _, msg := range s.messages {
-		fmtMsg := fmt.Sprintf("%s: %s", msg.timestamp.Format(time.RFC3339), msg.message)
+		fmtMsg := fmt.Sprintf("%s: %s\nby %s", ConvertHHMMSS(msg.Timestamp), msg.Text, msg.ClientId)
 		if err := conn.WriteMessage(websocket.TextMessage, []byte(fmtMsg)); err != nil {
 			log.Println(err)
 			return
@@ -92,17 +99,20 @@ func (s *Server) handleClients(w http.ResponseWriter, r *http.Request) {
 			s.mu.Unlock()
 			break
 		}
-		newMsg := Message{
-			timestamp: time.Now(),
-			message:   string(msg),
+		// 受信したメッセージを構造体に変換
+		var receivedMsg Message
+		if err := json.Unmarshal(msg, &receivedMsg); err != nil {
+			log.Println("Error unmarshaling message: ", err)
+			continue
 		}
-		log.Printf("%s Received: %s", newMsg.timestamp.Format(time.RFC3339), newMsg.message)
+		receivedMsg.Timestamp = time.Now()
+		log.Printf("Received: %s %s %s", ConvertHHMMSS(receivedMsg.Timestamp), receivedMsg.ClientId, receivedMsg.Text)
 		// 全てのメッセージを履歴に保存
 		s.mu.Lock()
-		s.messages = append(s.messages, newMsg)
+		s.messages = append(s.messages, receivedMsg)
 		s.mu.Unlock()
 		// 他の全てのClientにメッセージを送信
-		s.broadcast <- newMsg
+		s.broadcast <- receivedMsg
 	}
 }
 
@@ -111,7 +121,7 @@ func (s *Server) handleMessages() {
 	for {
 		newMsg := <-s.broadcast
 		s.mu.Lock()
-		fmtMsg := fmt.Sprintf("%s: %s", newMsg.timestamp.Format(time.RFC3339), newMsg.message)
+		fmtMsg := fmt.Sprintf("%s: %s\nby %s", ConvertHHMMSS(newMsg.Timestamp), newMsg.Text, newMsg.ClientId)
 		for client := range s.clients {
 			if err := client.WriteMessage(websocket.TextMessage, []byte(fmtMsg)); err != nil {
 				log.Println(err)
@@ -120,7 +130,7 @@ func (s *Server) handleMessages() {
 			}
 		}
 		s.mu.Unlock()
-		log.Println("Sent messageto all clients: ", string(newMsg.message))
+		log.Printf("Sent message from" + newMsg.ClientId + "to all clients: " + newMsg.Text + "\n")
 	}
 }
 

@@ -2,12 +2,24 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import ReconnectingWebsocket from "reconnecting-websocket";
+import { v4 as uuidv4 } from "uuid";
 
 const App = () => {
     const [messages, setMessages] = useState<string[]>([]); // 末尾が型らしい
     const [status, setStatus] = useState(0); // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
     const [inputText, setInputText] = useState<string>("");
     const socketRef = useRef<ReconnectingWebsocket>();
+    const [clientId, setClientId] = useState<string>("");
+
+    // ClientIDを取得or生成してローカルストレージに保存
+    useEffect(() => {
+        let storedClientId = localStorage.getItem("clientId") ?? ""; // getItem()がnullを返したら""をセットする
+        if (!storedClientId) {
+            storedClientId = uuidv4();
+            localStorage.setItem("clientId", storedClientId);
+        }
+        setClientId(storedClientId);
+    }, []);
     
     // websocket関連の処理は副作用のため、useEffectで実装
     useEffect(() => {
@@ -32,13 +44,14 @@ const App = () => {
         // 3. useEffectのクリーンアップの中で、websocketのクローズ処理を実行
         return () => {
             websocket.close();
-            websocket.removeEventListener
+            websocket.removeEventListener("message", onMessage);
         }
     }, []);
 
     const sendMessage = () => {
         if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-            socketRef.current.send(inputText);
+            const message = JSON.stringify({ clientId: clientId, text: inputText });
+            socketRef.current.send(message);
             setInputText(""); // メッセージ送信後に入力欄をクリア
         } else {
             setStatus(3);
