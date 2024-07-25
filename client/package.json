@@ -13,6 +13,7 @@
     "next": "14.2.4",
     "react": "^18",
     "react-dom": "^18",
+    "react-router-dom": "^6.25.1",
     "reconnecting-websocket": "^4.4.0",
     "uuid": "^10.0.0"
   },

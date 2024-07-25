@@ -41,6 +41,25 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var creds map[string]string
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	}
+
+	var validPassword = "test"
+	if creds["password"] != validPassword {
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // GoでJSONエンコードを行う場合、フィールド名はエクスポート（大文字で始まる必要があります）されている必要がある
 type Message struct {
 	Timestamp time.Time `json:"timestamp"`
@@ -68,6 +87,12 @@ func ConvertHHMMSS(t time.Time) string {
 }
 
 func (s *Server) handleClients(w http.ResponseWriter, r *http.Request) {
+	// authHeader := r.Header.Get("Authorization")
+	// if authHeader != "Bearer valid-token" {
+	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	// 	return
+	// }
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -134,15 +159,30 @@ func (s *Server) handleMessages() {
 	}
 }
 
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	server := NewServer()
 
-	http.HandleFunc("/ws", server.handleClients)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/login", loginHandler)
+	mux.HandleFunc("/ws", server.handleClients)
 	go server.handleMessages()
 
 	port := "8081"
 	log.Printf("Server started on port %s", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%v", port), enableCORS(mux)); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
