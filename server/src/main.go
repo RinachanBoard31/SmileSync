@@ -1,36 +1,16 @@
 package main
 
-// import (
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-
-// 	domain "smile-sync/src/domain"
-// 	handler "smile-sync/src/handler"
-// )
-
-// func main() {
-// 	hub := domain.NewHub()
-// 	go hub.RunLoop()
-
-// 	http.HandleFunc("/ws", handler.NewWebsocketHandler(hub).Handle)
-
-// 	port := "8081"
-// 	log.Printf("Server started on port %s", port)
-// 	if err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil); err != nil {
-// 		log.Fatalf("Server failed to start: %v", err)
-// 	}
-// }
-
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 )
 
 var upgrader = websocket.Upgrader{
@@ -39,6 +19,37 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+func init() {
+	envPath := ".env"
+	// debug時の.envファイルのパス指定
+	if _, err := os.Stat(envPath); os.IsNotExist(err) {
+		envPath = "../.env"
+	}
+	err := godotenv.Load(envPath)
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var creds map[string]string
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	}
+
+	loginPassword := os.Getenv("LOGIN_PASSWORD")
+	if creds["password"] != loginPassword {
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 // GoでJSONエンコードを行う場合、フィールド名はエクスポート（大文字で始まる必要があります）されている必要がある
@@ -134,15 +145,31 @@ func (s *Server) handleMessages() {
 	}
 }
 
+func enableCORS(next http.Handler) http.Handler {
+	clientAddress := os.Getenv("CLIENT_ADDRESS")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", clientAddress)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	server := NewServer()
 
-	http.HandleFunc("/ws", server.handleClients)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/login", loginHandler)
+	mux.HandleFunc("/ws", server.handleClients)
 	go server.handleMessages()
 
-	port := "8081"
+	port := os.Getenv("PORT")
 	log.Printf("Server started on port %s", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%v", port), enableCORS(mux)); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
