@@ -14,6 +14,8 @@ services:
         source: "${PWD}/client/src"
         target: "/usr/app/src"
     command: npm run dev
+    env_file:
+      - ./client/.env
     depends_on:
       - server
 
@@ -23,6 +25,8 @@ services:
       dockerfile: Dockerfile
     stdin_open: true
     tty: true
+    env_file:
+      - ./server/.env
     ports:
       - 8081:8081
     volumes:

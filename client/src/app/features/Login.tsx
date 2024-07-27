@@ -8,13 +8,13 @@ const Login: React.FC = () => {
 
     const handleLogin = async () => {
         try{
-            const response = await fetch("http://localhost:8081/login", {
+            const response = await fetch(`http://${process.env.NEXT_PUBLIC_CLIENT_IP}:${process.env.NEXT_PUBLIC_PORT}/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ password: password }),
             });
             if (response.ok) {
-                sessionStorage.setItem("jwt", "authorized"); // JWT(JSON Web Token)をsession storageに格納
+                sessionStorage.setItem("login_password", password); // JWT(JSON Web Token)をsession storageに格納
                 setError(null);
                 router.push("/chat");
             } else {

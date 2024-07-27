@@ -15,7 +15,7 @@ const Chat: React.FC = () => {
 
     // チャットページにアクセスする前に、認証トークンがなかったらloginページにリダイレクトする
     useEffect(() => {
-        const token = sessionStorage.getItem("jwt");
+        const token = sessionStorage.getItem("login_password");
         if (!token) {
             router.push("/login");
         }
@@ -37,12 +37,9 @@ const Chat: React.FC = () => {
             return;
         }
         // 1. websocketオブジェクトを生成し、サーバとの接続を開始
-        const websocket = new ReconnectingWebsocket("ws://localhost:8081/ws");
+        const websocket = new ReconnectingWebsocket(`ws://${process.env.NEXT_PUBLIC_CLIENT_IP}:${process.env.NEXT_PUBLIC_PORT}/ws`);
         socketRef.current = websocket;
         // 2. メッセージ受信時のイベントハンドラを設定
-        // const onMessage = (event: MessageEvent<string>) => {
-        //     setMessages((prevMessages) => [...prevMessages, event.data]);
-        // }
         websocket.onopen = () => {
             setStatus(1);
         }
@@ -56,12 +53,6 @@ const Chat: React.FC = () => {
         websocket.addEventListener("message", (event: MessageEvent<string>) => {
             setMessages((prevMessages) => [...prevMessages, event.data]);
         });
-        // 3. useEffectのクリーンアップの中で、websocketのクローズ処理を実行
-    //     return () => {
-    //         websocket.close();
-    //         websocket.removeEventListener("message", onMessage);
-    //     }
-    // }, []);
     };
 
     const stopWebSocket = () => {
