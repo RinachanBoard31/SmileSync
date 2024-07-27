@@ -8,6 +8,13 @@ on:
     branches:
       - main
 
+env:
+  NEXT_PUBLIC_CLIENT_IP: ${{ secrets.NEXT_PUBLIC_CLIENT_IP }}
+  NEXT_PUBLIC_PORT: ${{ secrets.NEXT_PUBLIC_PORT }}
+  CLIENT_ADDRESS: ${{ secrets.CLIENT_ADDRESS }}
+  LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+  PORT: ${{ secrets.PORT }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
