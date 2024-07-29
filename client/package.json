@@ -10,12 +10,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tensorflow/tfjs": "^4.20.0",
+    "@tensorflow/tfjs-core": "^4.20.0",
     "dotenv": "^16.4.5",
+    "face-api.js": "^0.20.0",
     "next": "^14.2.4",
+    "node-fetch": "^3.3.2",
     "react": "^18",
     "react-dom": "^18",
     "react-router-dom": "^6.25.1",
     "reconnecting-websocket": "^4.4.0",
+    "tfjs-image-recognition-base": "^0.6.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
