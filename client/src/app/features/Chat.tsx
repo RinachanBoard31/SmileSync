@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";    
 import ReconnectingWebsocket from "reconnecting-websocket";
 import { v4 as uuidv4 } from "uuid";
+import * as faceapi from "face-api.js";
+import * as tf from '@tensorflow/tfjs';
 
 const Chat: React.FC = () => {
     const [messages, setMessages] = useState<string[]>([]); // 末尾が型らしい
@@ -11,6 +13,10 @@ const Chat: React.FC = () => {
     const [inputText, setInputText] = useState<string>("");
     const socketRef = useRef<ReconnectingWebsocket | null>(null);
     const [clientId, setClientId] = useState<string>("");
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const [userExpressions, setUserExpressions] = useState<object | null>(null);
+    const [smileProb, setSmileProb] = useState(0);
+    const [smilePoint, setSmilePoint] = useState(0); // 笑顔ポイント、10ポイント(1秒)貯まると送信(暫定)
     const router = useRouter();
 
     // チャットページにアクセスする前に、認証トークンがなかったらloginページにリダイレクトする
@@ -30,6 +36,75 @@ const Chat: React.FC = () => {
         }
         setClientId(storedClientId);
     }, []);
+
+    // カメラ映像の取得と笑顔検出
+    useEffect(() => {
+        // TensorFlowのバックエンドを初期化
+        const initTensorFlowBackend = async () => {
+            await tf.setBackend("webgl");
+            await tf.ready();
+        };
+
+        // faceapiのモデルダウンロード
+        const loadModels = async () => {
+            const MODEL_URL = "/models";
+            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+        };
+
+        // ユーザのカメラ映像を取得
+        const getMedia = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+            }
+        };
+
+        // 初期化処理
+        const initialize = async () => {
+            await initTensorFlowBackend();
+            await loadModels();
+            await getMedia();
+        }
+
+        initialize();
+
+        // 笑顔の検出
+        const detectSmile = async () => {
+            if (videoRef.current) {
+                const options = new faceapi.TinyFaceDetectorOptions();
+                const result = await faceapi.detectSingleFace(videoRef.current, options).withFaceExpressions();
+                if (result && result.expressions) {
+                    setUserExpressions(result.expressions);
+                    setSmileProb(result.expressions.happy);
+                } else {
+                    setSmileProb(0);
+                }
+            }
+        };
+
+        // 1秒ごとに笑顔検出を実行
+        const intervalId = setInterval(detectSmile, 100);
+        return () => clearInterval(intervalId);
+    }, []);
+
+    // smileProbが変化したら発火（処理をdetectSmileに書くと、非同期になり、smileProbが更新された後すぐにsmilePointをチェックしても、更新が反映されていない可能性があるため）
+    useEffect(() => {
+        if (smileProb > 0.5) {  
+            setSmilePoint((prevPoint) => prevPoint + 1);
+        }
+    }, [smileProb]);
+
+    // smilePointが変化したら発火
+    useEffect(() => {
+        if (smilePoint >= 30) {
+            sendSmilePoint();
+        }
+    }, [smilePoint]);
     
     const startWebSocket = () => {
         // 0. すでに接続されている場合は何もしない
@@ -37,7 +112,7 @@ const Chat: React.FC = () => {
             return;
         }
         // 1. websocketオブジェクトを生成し、サーバとの接続を開始
-        const websocket = new ReconnectingWebsocket(`ws://${process.env.NEXT_PUBLIC_CLIENT_IP}:${process.env.NEXT_PUBLIC_PORT}/ws`);
+        const websocket = new ReconnectingWebsocket("ws://localhost:8081/ws");
         socketRef.current = websocket;
         // 2. メッセージ受信時のイベントハンドラを設定
         websocket.onopen = () => {
@@ -69,6 +144,17 @@ const Chat: React.FC = () => {
             const message = JSON.stringify({ clientId: clientId, text: inputText });
             socketRef.current.send(message);
             setInputText(""); // メッセージ送信後に入力欄をクリア
+        } else {
+            setStatus(3);
+        }
+    };
+
+    const sendSmilePoint = () => {
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            const message = JSON.stringify({ clientId: clientId, text: "笑顔ポイントが30ポイント貯まりました！" });
+            socketRef.current.send(message);
+            console.log("Smile point sent!");
+            setSmilePoint(0);
         } else {
             setStatus(3);
         }
@@ -142,6 +228,26 @@ const Chat: React.FC = () => {
                         </span>
                     </button>
                 </div>
+            </div>
+            <div>
+                <p>笑顔ポイント: {smilePoint}</p>
+            </div>
+            <div className = "text-9xl">
+                {smileProb > 0.5 ? "😊" : "😐"}
+            </div>
+            <div>
+                {userExpressions && (
+                    <pre>
+                        {Object.entries(userExpressions).map(([key, value]) => (
+                            <span key={key} style={{ color: value > 0.5 ? 'cyan' : ' inherit'}}>
+                                {key}: {value.toFixed(4)}{"\n"}
+                            </span>
+                        ))}
+                    </pre>
+                )}
+            </div>
+            <div>
+                <video ref={videoRef} autoPlay muted className="w-full h-auto rounded-lg border border-gray-300 dark:border-gray-700"></video>
             </div>
             <div>
                 {messages.map((message, index) => (
