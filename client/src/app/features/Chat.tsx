@@ -112,7 +112,7 @@ const Chat: React.FC = () => {
             return;
         }
         // 1. websocketオブジェクトを生成し、サーバとの接続を開始
-        const websocket = new ReconnectingWebsocket("ws://localhost:8081/ws");
+        const websocket = new ReconnectingWebsocket(`ws://${process.env.NEXT_PUBLIC_CLIENT_IP}:${process.env.NEXT_PUBLIC_PORT}/ws`);
         socketRef.current = websocket;
         // 2. メッセージ受信時のイベントハンドラを設定
         websocket.onopen = () => {
