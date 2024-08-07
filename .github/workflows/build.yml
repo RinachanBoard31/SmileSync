@@ -40,18 +40,18 @@ jobs:
           echo "PORT=${PORT}" >> server/.env
 
       - name: Build client and server
-        run: docker-compose build
+        run: docker compose build
 
       - name: Run client and server
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: Wait for services to be ready
         run: sleep 15
 
       - name: Run tests
         run: |
-          docker-compose exec -T client npm run test
-          docker-compose exec -T server sh -c "cd /app/src && go test ./..."
+          docker compose exec -T client npm run test
+          docker compose exec -T server sh -c "cd /app/src && go test ./..."
 
       - name: Shut down services
-        run: docker-compose down
+        run: docker compose down
