@@ -7,7 +7,7 @@ import * as tf from '@tensorflow/tfjs';
 
 import { startWebSocket, stopWebSocket, sendMessage, sendSmilePoint } from "./hooks/useWebSocket";
 import { useSmileDetection } from "./hooks/useSmileDetection";
-import { userUserAuthentication } from "./hooks/useUserAuthentication";
+import { useUserAuthentication } from "./hooks/useUserAuthentication";
 
 import { Webcam } from "./components/Webcam";
 import { SmileStatus } from "./components/SmileStatus";
@@ -26,10 +26,10 @@ const Chat: React.FC = () => {
     const [status, setStatus] = useState(2); // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
     const [clientId, setClientId] = useState<string>("");
     const [smilePoint, setSmilePoint] = useState(0);
-    const { smileProb, userExpressions, } = useSmileDetection(videoRef);
+    const { smileProb, userExpressions } = useSmileDetection(videoRef);
 
     // 認証通ってなかったらloginページにリダイレクト
-    userUserAuthentication(router);
+    useUserAuthentication(router);
 
     // ClientIDを取得or生成してローカルストレージに保存
     useEffect(() => {
@@ -55,7 +55,7 @@ const Chat: React.FC = () => {
         if (smilePoint >= 30) {
             sendSmilePoint(socketRef, clientId, setSmilePoint, setStatus);
         }
-    }, [smilePoint]);
+    }, [smilePoint, clientId]); // useEffectフック内で使用している変数が外部の状態に依存しているため、clientIdも依存配列必要
 
     // smileProbが変化したら発火（処理をdetectSmileに書くと、非同期になり、smileProbが更新された後すぐにsmilePointをチェックしても、更新が反映されていない可能性があるため）
     useEffect(() => {

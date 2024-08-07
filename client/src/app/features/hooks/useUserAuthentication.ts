@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
-export const userUserAuthentication = (
+export const useUserAuthentication = (
     router: AppRouterInstance,
 ) => {
     useEffect(() => {
