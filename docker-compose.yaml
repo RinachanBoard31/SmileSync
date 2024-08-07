@@ -13,7 +13,6 @@ services:
       - type: bind
         source: "${PWD}/client/src"
         target: "/usr/app/src"
-    command: npm run dev
     env_file:
       - ./client/.env
     depends_on:
@@ -33,4 +32,3 @@ services:
       - type: bind
         source: "${PWD}/server/src"
         target: "/go/app/src"
-    command: /app/main
