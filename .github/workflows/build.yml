@@ -38,6 +38,7 @@ jobs:
           echo "CLIENT_ADDRESS=${CLIENT_ADDRESS}" >> server/.env
           echo "LOGIN_PASSWORD=${LOGIN_PASSWORD}" > server/.env
           echo "PORT=${PORT}" >> server/.env
+          echo "FIRESTORE_PROJECT_ID=${FIRESTORE_PROJECT_ID}" >> server/.env
 
       - name: Build client and server
         run: docker compose build
