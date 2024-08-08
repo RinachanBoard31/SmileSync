@@ -32,3 +32,5 @@ services:
       - type: bind
         source: "${PWD}/server/src"
         target: "/go/app/src"
+    environment:
+      - TZ=Asia/Tokyo

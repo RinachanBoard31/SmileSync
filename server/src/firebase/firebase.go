@@ -19,7 +19,12 @@ var (
 
 func InitFirestore() {
 	ctx := context.Background()
-	sa := option.WithCredentialsFile("../smilesync-service-account.json")
+	saPath := "./smilesync-service-account.json"
+	// debug時のServiceAccountファイルのパス指定
+	if _, err := os.Stat(saPath); os.IsNotExist(err) {
+		saPath = "../smilesync-service-account.json"
+	}
+	sa := option.WithCredentialsFile(saPath)
 	projectId := os.Getenv("FIRESTORE_PROJECT_ID")
 	client, err := firestore.NewClient(ctx, projectId, sa)
 	if err != nil {
