@@ -45,11 +45,18 @@ export const stopWebSocket = (
 export const sendMessage = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     clientId: string,
+    nickname: string,
     text: string,
     setStatus: Dispatch<SetStateAction<number>>,
 ) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify({ clientId, text }));
+        const json = JSON.stringify({ 
+            client_id: clientId, 
+            nickname: nickname, 
+            text: text 
+        });
+        socketRef.current.send(json);
+        console.log("Message sent!");
     } else {
         setStatus(3);
     }
@@ -58,12 +65,17 @@ export const sendMessage = (
 export const sendSmilePoint = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     clientId: string,
+    nickname: string,
     setSmilePoint: Dispatch<SetStateAction<number>>,
     setStatus: Dispatch<SetStateAction<number>>,
 ) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        const message = JSON.stringify({ clientId: clientId, text: "笑顔ポイントが30ポイント貯まりました！" });
-        socketRef.current.send(message);
+        const json = JSON.stringify({ 
+            client_id: clientId, 
+            nickname: nickname,
+            text: "私、笑顔ポイントが30ポイント貯まりました！" 
+        });
+        socketRef.current.send(json);
         console.log("Smile point sent!");
         setSmilePoint(0);
     } else {
