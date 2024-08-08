@@ -45,6 +45,19 @@ h1 {
     background-size: 200% 200%;
 }
 
+h2 {
+    font-size: 1rem;
+    font-weight: bold;
+    font-style: italic;
+    text-align: left;
+    background: linear-gradient(to right, #9f75ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientMove 3s linear infinite;
+    background-size: 200% 200%;
+}
+
 @keyframes gradientMove {
     0% {
         background-position: 0% 50%;

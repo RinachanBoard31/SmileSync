@@ -25,6 +25,7 @@ const Chat: React.FC = () => {
     const [messages, setMessages] = useState<string[]>([]); // websocketでやりとりしているmessage
     const [status, setStatus] = useState(2); // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
     const [clientId, setClientId] = useState<string>("");
+    const [nickname , setNickname] = useState<string>("");
     const [smilePoint, setSmilePoint] = useState(0);
     const { smileProb, userExpressions } = useSmileDetection(videoRef);
 
@@ -41,6 +42,16 @@ const Chat: React.FC = () => {
         setClientId(storedClientId);
     }, []);
 
+    // ローカルストレージからnicknameを取得
+    useEffect(() => {
+        let storedNickname = localStorage.getItem("nickname") ?? "";
+        if (!storedNickname) {
+            storedNickname = "名無しさん";
+            localStorage.setItem("nickname", storedNickname);
+        }
+        setNickname(storedNickname);
+    }, []);
+
     // TensorFlowのバックエンドを初期化
     useEffect(() => {
         const tfInit = async () => {
@@ -53,7 +64,7 @@ const Chat: React.FC = () => {
     // smilePointが変化したら発火
     useEffect(() => {
         if (smilePoint >= 30) {
-            sendSmilePoint(socketRef, clientId, setSmilePoint, setStatus);
+            sendSmilePoint(socketRef, clientId, nickname, setSmilePoint, setStatus);
         }
     }, [smilePoint, clientId]); // useEffectフック内で使用している変数が外部の状態に依存しているため、clientIdも依存配列必要
 
@@ -74,7 +85,7 @@ const Chat: React.FC = () => {
                 <OnOffButton onClick={() => startWebSocket(socketRef, setMessages, setStatus)} disabled={status === 1}>Connect</OnOffButton>
                 <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
             </div>
-            <MessageInput onSendMessage={(message) => sendMessage(socketRef, clientId, message, setStatus)} />
+            <MessageInput onSendMessage={(message) => sendMessage(socketRef, clientId, nickname, message, setStatus)} />
             <div>
                 <p>笑顔ポイント: {smilePoint}</p>
             </div>

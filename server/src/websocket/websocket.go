@@ -23,7 +23,8 @@ var upgrader = websocket.Upgrader{
 // GoでJSONエンコードを行う場合、フィールド名はエクスポート（大文字で始まる必要があります）されている必要がある
 type Message struct {
 	Timestamp time.Time `json:"timestamp"`
-	ClientId  string    `json:"clientId"`
+	ClientId  string    `json:"client_id"`
+	Nickname  string    `json:"nickname"`
 	Text      string    `json:"text"`
 }
 
@@ -56,7 +57,7 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 
 	// これまでのメッセージ履歴を新しいClientに送信
 	for _, msg := range s.messages {
-		fmtMsg := fmt.Sprintf("%s: %s\nby %s", utils.ConvertHHMMSS(msg.Timestamp), msg.Text, msg.ClientId)
+		fmtMsg := fmt.Sprintf("%s: %s\n >> %s", utils.ConvertHHMMSS(msg.Timestamp), msg.Nickname, msg.Text)
 		if err := conn.WriteMessage(websocket.TextMessage, []byte(fmtMsg)); err != nil {
 			log.Println(err)
 			return
@@ -81,7 +82,7 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		receivedMsg.Timestamp = time.Now()
-		log.Printf("Received: %s %s %s", utils.ConvertHHMMSS(receivedMsg.Timestamp), receivedMsg.ClientId, receivedMsg.Text)
+		log.Printf("Received: %s %s %s %s", utils.ConvertHHMMSS(receivedMsg.Timestamp), receivedMsg.Text, receivedMsg.Nickname, receivedMsg.ClientId)
 		// 全てのメッセージを履歴に保存
 		s.mu.Lock()
 		s.messages = append(s.messages, receivedMsg)
@@ -96,7 +97,7 @@ func (s *Server) HandleMessages() {
 	for {
 		newMsg := <-s.broadcast
 		s.mu.Lock()
-		fmtMsg := fmt.Sprintf("%s: %s\nby %s", utils.ConvertHHMMSS(newMsg.Timestamp), newMsg.Text, newMsg.ClientId)
+		fmtMsg := fmt.Sprintf("%s: %s\n >> %s", utils.ConvertHHMMSS(newMsg.Timestamp), newMsg.Nickname, newMsg.Text)
 		for client := range s.clients {
 			if err := client.WriteMessage(websocket.TextMessage, []byte(fmtMsg)); err != nil {
 				log.Println(err)
@@ -105,6 +106,6 @@ func (s *Server) HandleMessages() {
 			}
 		}
 		s.mu.Unlock()
-		log.Printf("Sent message from" + newMsg.ClientId + "to all clients: " + newMsg.Text + "\n")
+		log.Printf("Sent message from" + newMsg.Nickname + "to all clients: " + newMsg.Text + "\n")
 	}
 }
