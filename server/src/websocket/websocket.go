@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"smile-sync/src/firebase"
 	"smile-sync/src/utils"
 	"sync"
 	"time"
@@ -83,6 +85,17 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 		}
 		receivedMsg.Timestamp = time.Now()
 		log.Printf("Received: %s %s %s %s", utils.ConvertHHMMSS(receivedMsg.Timestamp), receivedMsg.Text, receivedMsg.Nickname, receivedMsg.ClientId)
+		// Firestoreにメッセージを保存
+		firestoreMsg := firebase.Message{
+			Timestamp: receivedMsg.Timestamp,
+			ClientId:  receivedMsg.ClientId,
+			Nickname:  receivedMsg.Nickname,
+			Text:      receivedMsg.Text,
+		}
+		if err := firebase.InsertMessage(firestoreMsg); err != nil {
+			log.Println("Error inserting message into Firestore: ", err)
+			continue
+		}
 		// 全てのメッセージを履歴に保存
 		s.mu.Lock()
 		s.messages = append(s.messages, receivedMsg)

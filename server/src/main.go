@@ -5,9 +5,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"smile-sync/src/firebase"
 	"smile-sync/src/handler"
 	"smile-sync/src/middleware"
+	"smile-sync/src/utils"
 	"smile-sync/src/websocket"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -25,6 +28,12 @@ func init() {
 }
 
 func main() {
+	// FirestoreのドキュメントIDを生成
+	firebase.DocId = utils.ConvertYYYYMMDDHHMMSS(time.Now())
+	// Firestore初期化
+	firebase.InitFirestore()
+	defer firebase.CloseFirestore()
+
 	s := websocket.NewServer()
 
 	mux := http.NewServeMux()
