@@ -4,6 +4,7 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 export const startWebSocket = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     setMessages: Dispatch<SetStateAction<string[]>>,
+    setTotalSmilePoint: Dispatch<SetStateAction<number>>,
     setStatus: Dispatch<SetStateAction<number>>,  // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
 ) => {
     // 0. すでに接続されている場合は何もしない
@@ -25,7 +26,16 @@ export const startWebSocket = (
         console.error("WebSocket error observed:", error);
     }
     websocket.addEventListener("message", (event: MessageEvent<string>) => {
-        setMessages((prevMessages) => [...prevMessages, event.data]);
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === "message") {
+                setMessages((prevMessages) => [...prevMessages, `${data.timestamp} - ${data.nickname}: ${data.text}`]);
+            } else if (data.type === "smilePoint") {
+                setTotalSmilePoint(data.totalSmilePoint);
+            }
+        } catch (error) {
+            console.error("Error parsing message:", error);
+        }
     });
 };
 
@@ -51,6 +61,7 @@ export const sendMessage = (
 ) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
         const json = JSON.stringify({ 
+            type: "message",
             client_id: clientId, 
             nickname: nickname, 
             text: text 
@@ -66,14 +77,16 @@ export const sendSmilePoint = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     clientId: string,
     nickname: string,
+    smilePoint: number,
     setSmilePoint: Dispatch<SetStateAction<number>>,
     setStatus: Dispatch<SetStateAction<number>>,
 ) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
         const json = JSON.stringify({ 
+            type: "smilePoint",
             client_id: clientId, 
             nickname: nickname,
-            text: "私、笑顔ポイントが30ポイント貯まりました！" 
+            point: smilePoint
         });
         socketRef.current.send(json);
         console.log("Smile point sent!");
