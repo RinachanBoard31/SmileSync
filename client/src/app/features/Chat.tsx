@@ -16,6 +16,7 @@ import OnOffButton from "./components/OnOffButton";
 import ReconnectingWebSocket from "reconnecting-websocket";
 import MessageInput from "./components/MessageInput";
 import ConnectionStatusButton from "./components/ConnectionStatusButton";
+import LoadingScreen from "./components/LoadingScreen";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -28,6 +29,7 @@ const Chat: React.FC = () => {
     const [nickname , setNickname] = useState<string>("");
     const [smilePoint, setSmilePoint] = useState(0);
     const [totalSmilePoint, setTotalSmilePoint] = useState(0);
+    const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
     const { smileProb, userExpressions } = useSmileDetection(videoRef);
 
     // 認証通ってなかったらloginページにリダイレクト
@@ -62,6 +64,18 @@ const Chat: React.FC = () => {
         tfInit();
     }, []);
 
+    // ページ読み込み完了時にローディングを停止
+    useEffect(() => {
+        if (document.readyState === "complete") {
+            setIsLoading(false);
+        } else {
+            window.addEventListener("load", () => setIsLoading(false));
+        }
+        return () => {
+            window.removeEventListener("load", () => setIsLoading(false));
+        }
+    }, []);
+
     // smilePointが変化したら発火
     useEffect(() => {
         if (smilePoint >= 30) {
@@ -78,29 +92,33 @@ const Chat: React.FC = () => {
 
     return (
         <>
-            <h1>WebSocket Chat</h1>
-            <div>
-                <ConnectionStatusButton status={status}/>
-            </div>
-            <div>
-                <OnOffButton onClick={() => startWebSocket(socketRef, setMessages, setTotalSmilePoint, setStatus)} disabled={status === 1}>Connect</OnOffButton>
-                <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
-            </div>
-            <MessageInput onSendMessage={(message) => sendMessage(socketRef, clientId, nickname, message, setStatus)} />
-            <div>
-                <p>笑顔ポイント: {smilePoint}</p>
-            </div>
-            <div>
-                <p>合計笑顔ポイント：{totalSmilePoint}</p>
-            </div>
-            <SmileStatus smileProb={smileProb} />
-            <UserExpressions userExpressions={userExpressions} />
-            <Webcam videoRef={videoRef} />
-            <div>
-                {messages.map((message, index) => (
-                    <div key={index}>{message}</div>
-                ))}
-            </div>
+            {isLoading ? ( <LoadingScreen /> ) : (
+                <>
+                    <h1>WebSocket Chat</h1>
+                    <div>
+                        <ConnectionStatusButton status={status}/>
+                    </div>
+                    <div>
+                        <OnOffButton onClick={() => startWebSocket(socketRef, setMessages, setTotalSmilePoint, setStatus)} disabled={status === 1}>Connect</OnOffButton>
+                        <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
+                    </div>
+                    <MessageInput onSendMessage={(message) => sendMessage(socketRef, clientId, nickname, message, setStatus)} />
+                    <div>
+                        <p>笑顔ポイント: {smilePoint}</p>
+                    </div>
+                    <div>
+                        <p>合計笑顔ポイント：{totalSmilePoint}</p>
+                    </div>
+                    <SmileStatus smileProb={smileProb} />
+                    <UserExpressions userExpressions={userExpressions} />
+                    <Webcam videoRef={videoRef} />
+                    <div>
+                        {messages.map((message, index) => (
+                            <div key={index}>{message}</div>
+                        ))}
+                    </div>
+                </>
+            )}
         </>
     );
 };
