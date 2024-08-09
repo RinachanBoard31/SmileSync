@@ -103,7 +103,6 @@ const Chat: React.FC = () => {
                         <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
                         <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setClientsList, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
                     </div>
-                    <MessageInput onSendMessage={(message) => sendMessage(socketRef, clientId, nickname, message, setStatus)} />
                     <div>
                         <p>笑顔ポイント: {smilePoint}</p>
                     </div>
@@ -119,11 +118,6 @@ const Chat: React.FC = () => {
                     <SmileStatus smileProb={smileProb} />
                     <UserExpressions userExpressions={userExpressions} />
                     <Webcam videoRef={videoRef} />
-                    <div>
-                        {messages.map((message, index) => (
-                            <div key={index}>{message}</div>
-                        ))}
-                    </div>
                 </>
             )}
         </>

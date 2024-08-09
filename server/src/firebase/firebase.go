@@ -13,7 +13,7 @@ import (
 
 var (
 	Client       *firestore.Client
-	CollectionId = "websocket_chat"
+	CollectionId = "smilepoint_history"
 	DocId        string
 )
 
@@ -41,14 +41,14 @@ func CloseFirestore() {
 	}
 }
 
-type Message struct {
+type SmilePoint struct {
 	Timestamp time.Time `firestore:"timestamp"`
 	ClientId  string    `firestore:"client_id"`
 	Nickname  string    `firestore:"nickname"`
-	Text      string    `firestore:"text"`
+	Point     int       `firestore:"smile_point"`
 }
 
-func InsertMessage(msg Message) error {
+func SaveSmilePoint(sp SmilePoint) error {
 	ctx := context.Background()
 	if DocId == "" {
 		DocId = utils.ConvertYYYYMMDDHHMMSS(time.Now())
@@ -59,7 +59,7 @@ func InsertMessage(msg Message) error {
 	if err != nil {
 		// 存在しないなら、新しいドキュメントを作成
 		_, err = docRef.Set(ctx, map[string]interface{}{
-			"messages": []Message{msg},
+			"smile_points": []SmilePoint{sp},
 		})
 		if err != nil {
 			return err
@@ -68,8 +68,8 @@ func InsertMessage(msg Message) error {
 		// 存在するなら、既存のドキュメントにメッセージを追加
 		_, err = docRef.Update(ctx, []firestore.Update{
 			{
-				Path:  "messages",
-				Value: firestore.ArrayUnion(msg),
+				Path:  "smile_points",
+				Value: firestore.ArrayUnion(sp),
 			},
 		})
 		if err != nil {

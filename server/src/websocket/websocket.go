@@ -117,9 +117,6 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 
 		receivedMsg.Timestamp = time.Now()
 		if receivedMsg.Type == "message" {
-			s.mu.Lock()
-			s.clients[conn] = receivedMsg.Nickname // ニックネームを保存
-			s.mu.Unlock()
 			s.handleMessage(receivedMsg)
 		} else if receivedMsg.Type == "smilePoint" {
 			s.handleSmilePoint(receivedMsg)
@@ -129,16 +126,6 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleMessage(message Message) {
-	firestoreMsg := firebase.Message{
-		Timestamp: message.Timestamp,
-		ClientId:  message.ClientId,
-		Nickname:  message.Nickname,
-		Text:      message.Text,
-	}
-	if err := firebase.InsertMessage(firestoreMsg); err != nil {
-		log.Println("Error inserting message into Firestore: ", err)
-		return
-	}
 	// 全てのメッセージを履歴に保存
 	s.mu.Lock()
 	s.messages = append(s.messages, message)
@@ -148,6 +135,16 @@ func (s *Server) handleMessage(message Message) {
 }
 
 func (s *Server) handleSmilePoint(message Message) {
+	firestoreField := firebase.SmilePoint{
+		Timestamp: message.Timestamp,
+		ClientId:  message.ClientId,
+		Nickname:  message.Nickname,
+		Point:     message.Point,
+	}
+	if err := firebase.SaveSmilePoint(firestoreField); err != nil {
+		log.Println("Error inserting message into Firestore: ", err)
+		return
+	}
 	s.mu.Lock()
 	s.totalSmilePoint += message.Point
 	s.mu.Unlock()
