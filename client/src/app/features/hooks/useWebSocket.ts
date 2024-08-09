@@ -3,8 +3,10 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 
 export const startWebSocket = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
+    nickname: string,
     setMessages: Dispatch<SetStateAction<string[]>>,
     setTotalSmilePoint: Dispatch<SetStateAction<number>>,
+    setClientsList: Dispatch<SetStateAction<string[]>>,
     setStatus: Dispatch<SetStateAction<number>>,  // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
 ) => {
     // 0. すでに接続されている場合は何もしない
@@ -14,9 +16,15 @@ export const startWebSocket = (
     // 1. websocketオブジェクトを生成し、サーバとの接続を開始
     const websocket = new ReconnectingWebSocket(`ws://${process.env.NEXT_PUBLIC_CLIENT_IP}:${process.env.NEXT_PUBLIC_PORT}/ws`);
     socketRef.current = websocket;
-    // 2. メッセージ受信時のイベントハンドラを設定
+    // 2. websocketに自分のnicknameを教える
     websocket.onopen = () => {
         setStatus(1);
+        const initMessage = JSON.stringify({ 
+            type: "init",
+            nickname: nickname,
+        });
+        websocket.send(initMessage);
+
     }
     websocket.onclose = () => {
         setStatus(2);
@@ -32,6 +40,8 @@ export const startWebSocket = (
                 setMessages((prevMessages) => [...prevMessages, `${data.timestamp} - ${data.nickname}: ${data.text}`]);
             } else if (data.type === "smilePoint") {
                 setTotalSmilePoint(data.totalSmilePoint);
+            } else if (data.type === "clientsList") {
+                setClientsList(data.clientsList);
             }
         } catch (error) {
             console.error("Error parsing message:", error);
@@ -42,12 +52,14 @@ export const startWebSocket = (
 export const stopWebSocket = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     setMessages: Dispatch<SetStateAction<string[]>>,
+    setClientsList: Dispatch<SetStateAction<string[]>>,
     setStatus: Dispatch<SetStateAction<number>>,
 ) => {
     if (socketRef.current) {
         socketRef.current.close();
         socketRef.current = null;
         setMessages([]); // メッセージ一覧をクリア
+        setClientsList([]); // クライアント一覧をクリア
         setStatus(2);
     }
 };
