@@ -24,6 +24,7 @@ const Chat: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
     const [messages, setMessages] = useState<string[]>([]); // websocketでやりとりしているmessage
+    const [clientsList, setClientsList] = useState<string[]>([]); // websocketに接続しているclientのリスト
     const [status, setStatus] = useState(2); // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
     const [clientId, setClientId] = useState<string>("");
     const [nickname , setNickname] = useState<string>("");
@@ -99,8 +100,8 @@ const Chat: React.FC = () => {
                         <ConnectionStatusButton status={status}/>
                     </div>
                     <div>
-                        <OnOffButton onClick={() => startWebSocket(socketRef, setMessages, setTotalSmilePoint, setStatus)} disabled={status === 1}>Connect</OnOffButton>
-                        <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
+                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
+                        <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setClientsList, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
                     </div>
                     <MessageInput onSendMessage={(message) => sendMessage(socketRef, clientId, nickname, message, setStatus)} />
                     <div>
@@ -108,6 +109,12 @@ const Chat: React.FC = () => {
                     </div>
                     <div>
                         <p>合計笑顔ポイント：{totalSmilePoint}</p>
+                    </div>
+                    <div>
+                        <h2>Connected Clients:</h2>
+                        {clientsList.map((client, index) => (
+                            <div key={index}>{client}</div>
+                        ))}
                     </div>
                     <SmileStatus smileProb={smileProb} />
                     <UserExpressions userExpressions={userExpressions} />
