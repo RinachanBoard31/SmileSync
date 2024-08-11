@@ -1,9 +1,13 @@
 package websocket
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"os"
 
 	"smile-sync/src/firebase"
 	"sync"
@@ -30,14 +34,17 @@ type Message struct {
 	Point           int       `json:"point,omitempty"`
 	TotalSmilePoint int       `json:"totalSmilePoint,omitempty"`
 	ClientsList     []string  `json:"clientsList,omitempty"`
+	ImageUrl        string    `json:"imageUrl,omitempty"`
 }
 
 type Server struct {
 	clients         map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
 	broadcast       chan Message
 	smileBroadcast  chan int
+	imageBroadcast  chan string
 	messages        []Message
 	totalSmilePoint int
+	currentImageUrl string
 	mu              sync.Mutex
 }
 
@@ -46,8 +53,10 @@ func NewServer() *Server {
 		clients:         make(map[*websocket.Conn]string),
 		broadcast:       make(chan Message),
 		smileBroadcast:  make(chan int),
+		imageBroadcast:  make(chan string),
 		messages:        make([]Message, 0),
 		totalSmilePoint: 0,
+		currentImageUrl: "",
 	}
 }
 
@@ -148,8 +157,21 @@ func (s *Server) handleSmilePoint(message Message) {
 	s.mu.Lock()
 	s.totalSmilePoint += message.Point
 	s.mu.Unlock()
+
 	// 他の全てのClientにSmilePointを送信
 	s.smileBroadcast <- s.totalSmilePoint
+
+	if s.totalSmilePoint >= 100 && s.currentImageUrl == "" {
+		imageUrl, err := generateImageUrl()
+		if err == nil && imageUrl != "" {
+			s.mu.Lock()
+			s.currentImageUrl = imageUrl
+			s.mu.Unlock()
+			// 他の全てのClientに新しいImageUrlを送信
+			log.Println(s.currentImageUrl)
+			s.imageBroadcast <- s.currentImageUrl
+		}
+	}
 }
 
 func (s *Server) HandleMessages() {
@@ -176,6 +198,18 @@ func (s *Server) HandleMessages() {
 			}
 			s.mu.Unlock()
 			log.Printf("Sent total smile point to all clients: %dpt\n", totalSmilePoint)
+		// ImageUrlが送信された場合
+		case imageUrl := <-s.imageBroadcast:
+			s.mu.Lock()
+			imageUrlMsg := Message{
+				Type:     "imageUrl",
+				ImageUrl: imageUrl,
+			}
+			for client := range s.clients {
+				s.sendMessage(client, imageUrlMsg)
+			}
+			s.mu.Unlock()
+			log.Printf("Sent a new image url to all clients: %s\n", imageUrl)
 		}
 	}
 }
@@ -209,4 +243,89 @@ func (s *Server) sendMessage(conn *websocket.Conn, msg Message) {
 		log.Println("Error sending message: ", err)
 		return
 	}
+}
+
+func generateImageUrl() (string, error) {
+	form, err := newFormData()
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", os.Getenv("DALLE_API_ENDPOINT"), form)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("DALLE_API_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyString := string(bodyBytes)
+		log.Printf("Failed to generate image: %s", bodyString)
+		return "", err
+	}
+
+	var result struct {
+		Data []struct {
+			Url string `json:"url"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	log.Println(result.Data)
+	if len(result.Data) > 0 {
+		return result.Data[0].Url, nil
+	}
+	return "", nil
+}
+
+func newFormData() (*bytes.Buffer, error) {
+	// imageFilePath := "../img/init.png"
+
+	// file, err := os.Open(imageFilePath)
+	// if err != nil {
+	// 	log.Fatalf("Error opening init png: %v", err)
+	// 	return nil, "", err
+	// }
+	// defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// bodyへの画像の設定
+	// fileWriter, err := writer.CreateFormFile("image", filepath.Base(imageFilePath))
+	// if err != nil {
+	// 	log.Fatalf("Error creating form file: %v", err)
+	// 	return nil, "", err
+	// }
+	// _, err = io.Copy(fileWriter, file)
+	// if err != nil {
+	// 	log.Fatalf("Error copying file content: %v", err)
+	// 	return nil, "", err
+	// }
+
+	// その他のfieldの設定
+	writer.WriteField("prompt", "A dog, high resolution, golden retriever, peaceful, pet, smile, warm atmosphere, not sick")
+	writer.WriteField("model", "dall-e-3")
+	writer.WriteField("n", "1")
+	writer.WriteField("size", "1024x1024")
+	writer.WriteField("quality", "standard")
+	writer.WriteField("response_format", "url")
+	writer.WriteField("style", "natural")
+
+	err := writer.Close()
+	if err != nil {
+		log.Fatalf("Error closing writer: %v", err)
+		return nil, err
+	}
+
+	return body, nil
 }
