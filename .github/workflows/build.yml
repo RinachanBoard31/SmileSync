@@ -14,6 +14,9 @@ env:
   CLIENT_ADDRESS: ${{ secrets.CLIENT_ADDRESS }}
   LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
   PORT: ${{ secrets.PORT }}
+  FIRESTORE_PROJECT_ID: ${{ secrets.FIRESTORE_PROJECT_ID }}
+  DALLE_API_ENDPOINT: ${{ secrets.DALLE_API_ENDPOINT }}
+  DALLE_API_KEY: ${{ secrets.DALLE_API_KEY }}
 
 jobs:
   build:
@@ -39,6 +42,8 @@ jobs:
           echo "LOGIN_PASSWORD=${LOGIN_PASSWORD}" > server/.env
           echo "PORT=${PORT}" >> server/.env
           echo "FIRESTORE_PROJECT_ID=${FIRESTORE_PROJECT_ID}" >> server/.env
+          echo "DALLE_API_ENDPOINT=${DALLE_API_ENDPOINT}" >> server/.env
+          echo "DALLE_API_KEY=${DALLE_API_KEY}" >> server/.env
 
       - name: Build client and server
         run: docker compose build
@@ -48,11 +53,6 @@ jobs:
 
       - name: Wait for services to be ready
         run: sleep 15
-
-    #   - name: Run tests
-    #     run: |
-    #       docker compose exec -T client npm run test
-    #       docker compose exec -T server sh -c "cd /app/src && go test ./..."
 
       - name: Shut down services
         run: docker compose down
