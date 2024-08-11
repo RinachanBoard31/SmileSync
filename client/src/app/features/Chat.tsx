@@ -91,6 +91,15 @@ const Chat: React.FC = () => {
         }
     }, [smileProb]);
 
+    // 合計smilePointに応じて表示する画像のパスを計算
+    const getCurrentImage = (totalSmilePoint: number): string => {
+        const imageIndex = Math.floor(totalSmilePoint / 50) % 5;
+        return `../../../../public/images/image${imageIndex}.webp`;
+    };
+
+    // 現在表示するべき画像のパス
+    const currentImage = getCurrentImage(totalSmilePoint);
+
     return (
         <>
             {isLoading ? ( <LoadingScreen /> ) : (
@@ -117,6 +126,9 @@ const Chat: React.FC = () => {
                     </div>
                     <SmileStatus smileProb={smileProb} />
                     <UserExpressions userExpressions={userExpressions} />
+                    <div>
+                        <img src={currentImage} alt="Smile Level Image" />
+                    </div>
                     <Webcam videoRef={videoRef} />
                 </>
             )}
