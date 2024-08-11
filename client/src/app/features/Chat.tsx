@@ -14,7 +14,6 @@ import { SmileStatus } from "./components/SmileStatus";
 import { UserExpressions } from "./components/UserExpressions";
 import OnOffButton from "./components/OnOffButton";
 import ReconnectingWebSocket from "reconnecting-websocket";
-import MessageInput from "./components/MessageInput";
 import ConnectionStatusButton from "./components/ConnectionStatusButton";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -31,6 +30,7 @@ const Chat: React.FC = () => {
     const [smilePoint, setSmilePoint] = useState(0);
     const [totalSmilePoint, setTotalSmilePoint] = useState(0);
     const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
+    const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
     const { smileProb, userExpressions } = useSmileDetection(videoRef);
 
     // 認証通ってなかったらloginページにリダイレクト
@@ -91,14 +91,12 @@ const Chat: React.FC = () => {
         }
     }, [smileProb]);
 
-    // 合計smilePointに応じて表示する画像のパスを計算
-    const getCurrentImage = (totalSmilePoint: number): string => {
-        const imageIndex = Math.floor(totalSmilePoint / 50) % 5;
-        return `../../../../public/images/image${imageIndex}.webp`;
-    };
-
-    // 現在表示するべき画像のパス
-    const currentImage = getCurrentImage(totalSmilePoint);
+    // 画像のURLが更新されたら発火
+    useEffect(() => {
+        if (currentImage) {
+            console.log("Image updated: ", currentImage);
+        }
+    }, [currentImage]);
 
     return (
         <>
@@ -109,7 +107,7 @@ const Chat: React.FC = () => {
                         <ConnectionStatusButton status={status}/>
                     </div>
                     <div>
-                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
+                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setCurrentImage, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
                         <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setClientsList, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
                     </div>
                     <div>

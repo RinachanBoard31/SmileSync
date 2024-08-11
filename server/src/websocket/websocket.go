@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
 
@@ -108,6 +107,15 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 	}
 	s.sendMessage(conn, initialSmilePoint)
 
+	// 現在のImageUrlを新しいClientに送信
+	if s.currentImageUrl != "" {
+		imageUrl := Message{
+			Type:     "imageUrl",
+			ImageUrl: s.currentImageUrl,
+		}
+		s.sendMessage(conn, imageUrl)
+	}
+
 	// Clientからのメッセージを待ち受ける
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -168,7 +176,6 @@ func (s *Server) handleSmilePoint(message Message) {
 			s.currentImageUrl = imageUrl
 			s.mu.Unlock()
 			// 他の全てのClientに新しいImageUrlを送信
-			log.Println(s.currentImageUrl)
 			s.imageBroadcast <- s.currentImageUrl
 		}
 	}
@@ -246,12 +253,22 @@ func (s *Server) sendMessage(conn *websocket.Conn, msg Message) {
 }
 
 func generateImageUrl() (string, error) {
-	form, err := newFormData()
+	reqBody := map[string]interface{}{
+		"prompt":          "A dog, high resolution, golden retriever, peaceful, pet, smile, not sick, happy",
+		"model":           "dall-e-3",
+		"n":               1,
+		"size":            "1024x1024",
+		"quality":         "standard",
+		"response_format": "url",
+		"style":           "natural",
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", os.Getenv("DALLE_API_ENDPOINT"), form)
+	req, err := http.NewRequest("POST", os.Getenv("DALLE_API_ENDPOINT"), bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return "", err
 	}
@@ -280,52 +297,9 @@ func generateImageUrl() (string, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", err
 	}
-	log.Println(result.Data)
+
 	if len(result.Data) > 0 {
 		return result.Data[0].Url, nil
 	}
 	return "", nil
-}
-
-func newFormData() (*bytes.Buffer, error) {
-	// imageFilePath := "../img/init.png"
-
-	// file, err := os.Open(imageFilePath)
-	// if err != nil {
-	// 	log.Fatalf("Error opening init png: %v", err)
-	// 	return nil, "", err
-	// }
-	// defer file.Close()
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	// bodyへの画像の設定
-	// fileWriter, err := writer.CreateFormFile("image", filepath.Base(imageFilePath))
-	// if err != nil {
-	// 	log.Fatalf("Error creating form file: %v", err)
-	// 	return nil, "", err
-	// }
-	// _, err = io.Copy(fileWriter, file)
-	// if err != nil {
-	// 	log.Fatalf("Error copying file content: %v", err)
-	// 	return nil, "", err
-	// }
-
-	// その他のfieldの設定
-	writer.WriteField("prompt", "A dog, high resolution, golden retriever, peaceful, pet, smile, warm atmosphere, not sick")
-	writer.WriteField("model", "dall-e-3")
-	writer.WriteField("n", "1")
-	writer.WriteField("size", "1024x1024")
-	writer.WriteField("quality", "standard")
-	writer.WriteField("response_format", "url")
-	writer.WriteField("style", "natural")
-
-	err := writer.Close()
-	if err != nil {
-		log.Fatalf("Error closing writer: %v", err)
-		return nil, err
-	}
-
-	return body, nil
 }
