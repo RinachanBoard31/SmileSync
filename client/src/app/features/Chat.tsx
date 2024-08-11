@@ -14,7 +14,6 @@ import { SmileStatus } from "./components/SmileStatus";
 import { UserExpressions } from "./components/UserExpressions";
 import OnOffButton from "./components/OnOffButton";
 import ReconnectingWebSocket from "reconnecting-websocket";
-import MessageInput from "./components/MessageInput";
 import ConnectionStatusButton from "./components/ConnectionStatusButton";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -31,6 +30,7 @@ const Chat: React.FC = () => {
     const [smilePoint, setSmilePoint] = useState(0);
     const [totalSmilePoint, setTotalSmilePoint] = useState(0);
     const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
+    const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
     const { smileProb, userExpressions } = useSmileDetection(videoRef);
 
     // 認証通ってなかったらloginページにリダイレクト
@@ -91,6 +91,13 @@ const Chat: React.FC = () => {
         }
     }, [smileProb]);
 
+    // 画像のURLが更新されたら発火
+    useEffect(() => {
+        if (currentImage) {
+            console.log("Image updated: ", currentImage);
+        }
+    }, [currentImage]);
+
     return (
         <>
             {isLoading ? ( <LoadingScreen /> ) : (
@@ -100,7 +107,7 @@ const Chat: React.FC = () => {
                         <ConnectionStatusButton status={status}/>
                     </div>
                     <div>
-                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
+                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setCurrentImage, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
                         <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setClientsList, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
                     </div>
                     <div>
@@ -117,6 +124,9 @@ const Chat: React.FC = () => {
                     </div>
                     <SmileStatus smileProb={smileProb} />
                     <UserExpressions userExpressions={userExpressions} />
+                    <div>
+                        <img src={currentImage} alt="Smile Level Image" />
+                    </div>
                     <Webcam videoRef={videoRef} />
                 </>
             )}

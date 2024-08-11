@@ -6,6 +6,7 @@ export const startWebSocket = (
     nickname: string,
     setMessages: Dispatch<SetStateAction<string[]>>,
     setTotalSmilePoint: Dispatch<SetStateAction<number>>,
+    setCurrentImage: Dispatch<SetStateAction<string>>,
     setClientsList: Dispatch<SetStateAction<string[]>>,
     setStatus: Dispatch<SetStateAction<number>>,  // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
 ) => {
@@ -24,7 +25,6 @@ export const startWebSocket = (
             nickname: nickname,
         });
         websocket.send(initMessage);
-
     }
     websocket.onclose = () => {
         setStatus(2);
@@ -33,6 +33,7 @@ export const startWebSocket = (
         setStatus(3);
         console.error("WebSocket error observed:", error);
     }
+    // 3. サーバからのメッセージを受信した際の処理
     websocket.addEventListener("message", (event: MessageEvent<string>) => {
         try {
             const data = JSON.parse(event.data);
@@ -42,6 +43,8 @@ export const startWebSocket = (
                 setTotalSmilePoint(data.totalSmilePoint);
             } else if (data.type === "clientsList") {
                 setClientsList(data.clientsList);
+            } else if (data.type === "imageUrl") {
+                setCurrentImage(data.imageUrl);
             }
         } catch (error) {
             console.error("Error parsing message:", error);
