@@ -7,14 +7,15 @@ services:
       dockerfile: Dockerfile
     tty: true
     stdin_open: true
+    env_file:
+      - ./client/.env
+    container_name: smilesync-client
     ports:
       - 3000:3000
     volumes:
       - type: bind
         source: "${PWD}/client/src"
         target: "/usr/app/src"
-    env_file:
-      - ./client/.env
     depends_on:
       - server
 
@@ -26,6 +27,7 @@ services:
     tty: true
     env_file:
       - ./server/.env
+    container_name: smilesync-server
     ports:
       - 8081:8081
     volumes:

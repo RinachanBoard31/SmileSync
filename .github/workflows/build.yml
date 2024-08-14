@@ -29,17 +29,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Create .env files
         run: |
-          echo "NEXT_PUBLIC_CLIENT_IP=${NEXT_PUBLIC_CLIENT_IP}" > client/.env
+          echo "NEXT_PUBLIC_CLIENT_IP=${NEXT_PUBLIC_CLIENT_IP}" >> client/.env
           echo "NEXT_PUBLIC_PORT=${NEXT_PUBLIC_PORT}" >> client/.env
           echo "CLIENT_ADDRESS=${CLIENT_ADDRESS}" >> server/.env
-          echo "LOGIN_PASSWORD=${LOGIN_PASSWORD}" > server/.env
+          echo "LOGIN_PASSWORD=${LOGIN_PASSWORD}" >> server/.env
           echo "PORT=${PORT}" >> server/.env
           echo "FIRESTORE_PROJECT_ID=${FIRESTORE_PROJECT_ID}" >> server/.env
           echo "DALLE_API_ENDPOINT=${DALLE_API_ENDPOINT}" >> server/.env
@@ -51,8 +51,12 @@ jobs:
       - name: Run client and server
         run: docker compose up -d
 
-      - name: Wait for services to be ready
-        run: sleep 15
+      - name: Wait for service to be ready
+        run: |
+            source server/.env
+            until nc -z localhost 3000; do
+            sleep 1;
+            done
 
       - name: Shut down services
         run: docker compose down
