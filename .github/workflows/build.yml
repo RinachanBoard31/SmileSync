@@ -54,7 +54,7 @@ jobs:
       - name: Wait for service to be ready
         run: |
             source server/.env
-            until nc -z localhost $PORT; do
+            until nc -z server $PORT; do
             sleep 1;
             done
 
