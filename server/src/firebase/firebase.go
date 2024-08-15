@@ -42,10 +42,11 @@ func CloseFirestore() {
 }
 
 type SmilePoint struct {
-	Timestamp time.Time `firestore:"timestamp"`
-	ClientId  string    `firestore:"client_id"`
-	Nickname  string    `firestore:"nickname"`
-	Point     int       `firestore:"smile_point"`
+	Timestamp       time.Time `firestore:"timestamp"`
+	ClientId        string    `firestore:"client_id"`
+	Nickname        string    `firestore:"nickname"`
+	Point           int       `firestore:"smile_point"`
+	TotalSmilePoint int       `firestore:"total_smile_point"`
 }
 
 type SmileImage struct {
