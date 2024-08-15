@@ -48,6 +48,13 @@ type SmilePoint struct {
 	Point     int       `firestore:"smile_point"`
 }
 
+type SmileImage struct {
+	Timestamp       time.Time `firestore:"timestamp"`
+	TotalSmilePoint int       `firestore:"total_smile_point"`
+	Prompt          string    `firestore:"prompt"`
+	ImageUrl        string    `firestore:"image_url"`
+}
+
 func SaveSmilePoint(sp SmilePoint) error {
 	ctx := context.Background()
 	if DocId == "" {
@@ -59,7 +66,7 @@ func SaveSmilePoint(sp SmilePoint) error {
 	if err != nil {
 		// 存在しないなら、新しいドキュメントを作成
 		_, err = docRef.Set(ctx, map[string]interface{}{
-			"smile_points": []SmilePoint{sp},
+			"smile_points_log": []SmilePoint{sp},
 		})
 		if err != nil {
 			return err
@@ -68,8 +75,39 @@ func SaveSmilePoint(sp SmilePoint) error {
 		// 存在するなら、既存のドキュメントにメッセージを追加
 		_, err = docRef.Update(ctx, []firestore.Update{
 			{
-				Path:  "smile_points",
+				Path:  "smile_points_log",
 				Value: firestore.ArrayUnion(sp),
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SaveSmileImage(si SmileImage) error {
+	ctx := context.Background()
+	if DocId == "" {
+		DocId = utils.ConvertYYYYMMDDHHMMSS(time.Now())
+	}
+	docRef := Client.Collection(CollectionId).Doc(DocId)
+	// Docが存在するか確認
+	_, err := docRef.Get(ctx)
+	if err != nil {
+		// 存在しないなら、新しいドキュメントを作成
+		_, err = docRef.Set(ctx, map[string]interface{}{
+			"smile_image": []SmileImage{si},
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		// 存在するなら、既存のドキュメントにメッセージを追加
+		_, err = docRef.Update(ctx, []firestore.Update{
+			{
+				Path:  "smile_image",
+				Value: firestore.ArrayUnion(si),
 			},
 		})
 		if err != nil {

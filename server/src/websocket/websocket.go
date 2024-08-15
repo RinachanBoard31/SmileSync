@@ -152,15 +152,14 @@ func (s *Server) handleMessage(message Message) {
 }
 
 func (s *Server) handleSmilePoint(message Message) {
-	firestoreField := firebase.SmilePoint{
+	firestoreSmilePointField := firebase.SmilePoint{
 		Timestamp: message.Timestamp,
 		ClientId:  message.ClientId,
 		Nickname:  message.Nickname,
 		Point:     message.Point,
 	}
-	if err := firebase.SaveSmilePoint(firestoreField); err != nil {
-		log.Println("Error inserting message into Firestore: ", err)
-		return
+	if err := firebase.SaveSmilePoint(firestoreSmilePointField); err != nil {
+		log.Println("Error inserting smile_point into Firestore: ", err)
 	}
 	s.mu.Lock()
 	s.totalSmilePoint += message.Point
@@ -172,6 +171,15 @@ func (s *Server) handleSmilePoint(message Message) {
 	if s.totalSmilePoint >= 100 && s.currentImageUrl == "" {
 		imageUrl, err := generateImageUrl()
 		if err == nil && imageUrl != "" {
+			firestoreSmileImageField := firebase.SmileImage{
+				Timestamp:       message.Timestamp,
+				TotalSmilePoint: s.totalSmilePoint,
+				Prompt:          "A dog, high resolution, golden retriever, peaceful, pet, smile, not sick, happy",
+				ImageUrl:        imageUrl,
+			}
+			if err := firebase.SaveSmileImage(firestoreSmileImageField); err != nil {
+				log.Println("Error inserting smile_image into Firestore: ", err)
+			}
 			s.mu.Lock()
 			s.currentImageUrl = imageUrl
 			s.mu.Unlock()
@@ -252,7 +260,7 @@ func (s *Server) sendMessage(conn *websocket.Conn, msg Message) {
 	}
 }
 
-func generateImageUrl() (string, error) {
+func generateImageUrl() (imageUrl string, err error) {
 	reqBody := map[string]interface{}{
 		"prompt":          "A dog, high resolution, golden retriever, peaceful, pet, smile, not sick, happy",
 		"model":           "dall-e-3",
