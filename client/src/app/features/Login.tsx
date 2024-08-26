@@ -21,7 +21,6 @@ const Login: React.FC = () => {
         try{
             // const response = await fetch(`https://${process.env.NEXT_PUBLIC_CLIENT_IP}:${process.env.NEXT_PUBLIC_PORT}/login`, {
             const response = await fetch(`https://${process.env.NEXT_PUBLIC_CLIENT_IP}/login`, {
-
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ password: password }),
