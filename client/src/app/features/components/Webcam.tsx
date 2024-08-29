@@ -5,5 +5,5 @@ interface WebcamProps {
 }
 
 export const Webcam: React.FC<WebcamProps> = ({ videoRef }) => (
-    <video ref={videoRef} autoPlay muted className="w-full h-auto rounded-lg border border-gray-300 dark:border-gray-700"></video>
+    <video ref={videoRef} autoPlay muted className="w-1/4 h-auto rounded-lg border border-gray-300 dark:border-gray-700 float-left"></video>
 );

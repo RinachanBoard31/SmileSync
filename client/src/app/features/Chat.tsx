@@ -122,12 +122,12 @@ const Chat: React.FC = () => {
                             <div key={index}>{client}</div>
                         ))}
                     </div>
+                    <Webcam videoRef={videoRef} />
                     <SmileStatus smileProb={smileProb} />
                     <UserExpressions userExpressions={userExpressions} />
                     <div>
                         <img src={currentImage} alt="Smile Level Image" />
                     </div>
-                    <Webcam videoRef={videoRef} />
                 </>
             )}
         </>
