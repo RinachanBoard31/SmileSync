@@ -26,7 +26,9 @@ export const useSmileDetection = (
 
         const detectSmile = async () => {
             if (videoRef.current) {
-                const options = new faceapi.TinyFaceDetectorOptions();
+                const options = new faceapi.TinyFaceDetectorOptions(
+                    { inputSize: 160, scoreThreshold: 0.5 } //test
+                );
                 const result = await faceapi.detectSingleFace(videoRef.current, options).withFaceExpressions();
                 if (result && result.expressions) {
                     setUserExpressions(result.expressions);
@@ -41,7 +43,7 @@ export const useSmileDetection = (
         const initialize = async () => {
             await loadModels();
             await getMedia();
-            const intervalId = setInterval(detectSmile, 100);
+            const intervalId = setInterval(detectSmile, 500); //test
             return () => clearInterval(intervalId);
         };
 
