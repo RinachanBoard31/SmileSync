@@ -41,7 +41,7 @@ export const useSmileDetection = (
         const initialize = async () => {
             await loadModels();
             await getMedia();
-            const intervalId = setInterval(detectSmile, 1000);
+            const intervalId = setInterval(detectSmile, 100);
             return () => clearInterval(intervalId);
         };
 
