@@ -19,17 +19,16 @@ const Login: React.FC = () => {
 
     const handleLogin = async () => {
         try{
-            // const response = await fetch(`https://${process.env.NEXT_PUBLIC_CLIENT_IP}:${process.env.NEXT_PUBLIC_PORT}/login`, {
-            const response = await fetch(`https://${process.env.NEXT_PUBLIC_CLIENT_IP}/login`, { //
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_ADDRESS}/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ password: password }),
             });
             if (response.ok) {
-                sessionStorage.setItem("login_password", password); // JWT(JSON Web Token)をsession storageに格納
+                sessionStorage.setItem("login_password", password); // tokenをsession storageに格納
                 localStorage.setItem("nickname", nickname);
                 setError(null);
-                setIsLoading(true); //　ローディング開始
+                setIsLoading(true); // ローディング開始
                 router.push("/chat");
             } else {
                 setError("Invalid password");

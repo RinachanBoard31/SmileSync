@@ -9,8 +9,8 @@ const nextConfig = {
     return config;
   },
   env: {
-    NEXT_PUBLIC_CLIENT_IP: process.env.NEXT_PUBLIC_CLIENT_IP,
-    NEXT_PUBLIC_PORT: process.env.NEXT_PUBLIC_PORT,
+    NEXT_PUBLIC_SERVER_ADDRESS: process.env.NEXT_PUBLIC_SERVER_ADDRESS,
+    NEXT_PUBLIC_SERVER_WEBSOCKET: process.env.NEXT_PUBLIC_SERVER_WEBSOCKET,
   },
 };
 
