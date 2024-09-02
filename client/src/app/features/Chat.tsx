@@ -82,7 +82,7 @@ const Chat: React.FC = () => {
 
     // smilePointが変化したら発火
     useEffect(() => {
-        if (smilePoint >= 30) {
+        if (smilePoint >= 10) {
             sendSmilePoint(socketRef, clientId, nickname, smilePoint, setSmilePoint, setStatus);
         }
     }, [smilePoint, clientId, nickname]); // useEffectフック内で使用している変数が外部の状態に依存しているため、clientIdも依存配列必要
