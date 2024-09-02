@@ -19,18 +19,27 @@ var (
 
 func InitFirestore() {
 	ctx := context.Background()
-	saPath := "./smilesync-service-account.json"
-	// debug時のServiceAccountファイルのパス指定
-	if _, err := os.Stat(saPath); os.IsNotExist(err) {
-		saPath = "../smilesync-service-account.json"
-	}
-	sa := option.WithCredentialsFile(saPath)
 	projectId := os.Getenv("FIRESTORE_PROJECT_ID")
-	client, err := firestore.NewClient(ctx, projectId, sa)
-	if err != nil {
-		log.Fatalf("Failed to create Firestore client: %v", err)
+	// ローカル環境ではservice-account.jsonを使用
+	if _, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT"); !ok {
+		saPath := "./smilesync-service-account.json"
+		// debug時のServiceAccountファイルのパス指定
+		if _, err := os.Stat(saPath); os.IsNotExist(err) {
+			saPath = "../smilesync-service-account.json"
+		}
+		sa := option.WithCredentialsFile(saPath)
+		client, err := firestore.NewClient(ctx, projectId, sa)
+		if err != nil {
+			log.Fatalf("Failed to create Firestore client: %v", err)
+		}
+		Client = client
+	} else { // GCP環境では自動で認証
+		client, err := firestore.NewClient(ctx, projectId)
+		if err != nil {
+			log.Fatalf("Failed to create Firestore client: %v", err)
+		}
+		Client = client
 	}
-	Client = client
 }
 
 func CloseFirestore() {
