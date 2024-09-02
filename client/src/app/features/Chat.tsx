@@ -33,6 +33,7 @@ const Chat: React.FC = () => {
     const [totalIdeas, setTotalIdeas] = useState(0);
     const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
     const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
+    const [level, setLevel] = useState(1);
     const { smileProb, userExpressions } = useSmileDetection(videoRef);
 
     // 認証通ってなかったらloginページにリダイレクト
@@ -107,6 +108,13 @@ const Chat: React.FC = () => {
         }
     }, [currentImage]);
 
+    // Levelが上がったら発火
+    useEffect(() => {
+        if (level) {
+            console.log("Level up to : ", level);
+        }
+    }, [level]);
+
     return (
         <>
             {isLoading ? ( <LoadingScreen /> ) : (
@@ -116,7 +124,7 @@ const Chat: React.FC = () => {
                         <ConnectionStatusButton status={status}/>
                     </div>
                     <div>
-                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
+                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
                         <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setClientsList, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
                     </div>
                     <div>
@@ -130,6 +138,9 @@ const Chat: React.FC = () => {
                     </div>
                     <div>
                         <p>合計アイデア数：{totalIdeas}</p>
+                    </div>
+                    <div>
+                        <p>現在のレベル：{level}</p>
                     </div>
                     <div>
                         <h2>Connected Clients:</h2>
