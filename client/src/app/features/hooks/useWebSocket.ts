@@ -8,6 +8,7 @@ export const startWebSocket = (
     setTotalSmilePoint: Dispatch<SetStateAction<number>>,
     setTotalIdeas: Dispatch<SetStateAction<number>>,
     setCurrentImage: Dispatch<SetStateAction<string>>,
+    setLevel: Dispatch<SetStateAction<number>>,
     setClientsList: Dispatch<SetStateAction<string[]>>,
     setStatus: Dispatch<SetStateAction<number>>,  // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
 ) => {
@@ -48,6 +49,8 @@ export const startWebSocket = (
                 setTotalIdeas(data.totalIdeas);
             } else if (data.type === "imageUrl") {
                 setCurrentImage(data.imageUrl);
+            } else if (data.type === "level") {
+                setLevel(data.level);
             }
         } catch (error) {
             console.error("Error parsing message:", error);

@@ -33,6 +33,7 @@ type Message struct {
 	Point           int       `json:"point,omitempty"`
 	TotalSmilePoint int       `json:"totalSmilePoint,omitempty"`
 	TotalIdeas      int       `json:"totalIdeas,omitempty"`
+	Level           int       `json:"level,omitempty"`
 	ClientsList     []string  `json:"clientsList,omitempty"`
 	ImageUrl        string    `json:"imageUrl,omitempty"`
 }
@@ -43,10 +44,12 @@ type Server struct {
 	smileBroadcast  chan int
 	ideaBroadcast   chan int
 	imageBroadcast  chan string
+	levelBroadcast  chan int
 	messages        []Message
 	totalSmilePoint int
 	totalIdeas      int
 	currentImageUrl string
+	Level           int
 	mu              sync.Mutex
 }
 
@@ -57,9 +60,12 @@ func NewServer() *Server {
 		smileBroadcast:  make(chan int),
 		ideaBroadcast:   make(chan int),
 		imageBroadcast:  make(chan string),
+		levelBroadcast:  make(chan int),
 		messages:        make([]Message, 0),
 		totalSmilePoint: 0,
+		totalIdeas:      0,
 		currentImageUrl: "",
+		Level:           1,
 	}
 }
 
@@ -99,7 +105,7 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 	// 現在のClientリストを全てのClientsに送信
 	s.broadcastClientsList()
 
-	// これまでのメッセージ履歴を新しいClientに送信
+	// 現在のメッセージ履歴を新しいClientに送信
 	for _, msg := range s.messages {
 		s.sendMessage(conn, msg)
 	}
@@ -126,6 +132,13 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 		}
 		s.sendMessage(conn, imageUrl)
 	}
+
+	// 現在のLevelを新しいClientに送信
+	initialLevel := Message{
+		Type:  "level",
+		Level: s.Level,
+	}
+	s.sendMessage(conn, initialLevel)
 
 	// Clientからのメッセージを待ち受ける
 	for {
@@ -182,7 +195,34 @@ func (s *Server) handleSmilePoint(message Message) {
 	// 他の全てのClientにSmilePointを送信
 	s.smileBroadcast <- s.totalSmilePoint
 
-	if s.totalSmilePoint >= 100 && s.currentImageUrl == "" {
+	// レベルの処理
+	s.mu.Lock()
+	previousLevel := s.Level
+	switch {
+	case s.totalSmilePoint >= 2000:
+		s.Level = 5
+	case s.totalSmilePoint >= 1000:
+		s.Level = 4
+	case s.totalSmilePoint >= 500:
+		s.Level = 3
+	case s.totalSmilePoint >= 200:
+		s.Level = 2
+	}
+	s.mu.Unlock()
+
+	// レベルが変化していたらFirestoreにLevelを保存
+	if previousLevel != s.Level {
+		firestoreSmileLevelField := firebase.SmileLevel{
+			Timestamp: message.Timestamp,
+			Level:     s.Level,
+		}
+		if err := firebase.SaveSmileLevel(firestoreSmileLevelField); err != nil {
+			log.Println("Error inserting smile_level into Firestore: ", err)
+		}
+		// 全てのClientに新しいLevelを送信
+		s.levelBroadcast <- s.Level
+
+		// 新しいImageUrlを生成し、Firestoreに保存
 		imageUrl, err := generateImageUrl()
 		if err == nil && imageUrl != "" {
 			firestoreSmileImageField := firebase.SmileImage{
@@ -268,6 +308,18 @@ func (s *Server) HandleMessages() {
 			}
 			s.mu.Unlock()
 			log.Printf("Sent a new image url to all clients: %s\n", imageUrl)
+		// Levelが送信された場合
+		case Level := <-s.levelBroadcast:
+			s.mu.Lock()
+			levelMsg := Message{
+				Type:  "level",
+				Level: Level,
+			}
+			for client := range s.clients {
+				s.sendMessage(client, levelMsg)
+			}
+			s.mu.Unlock()
+			log.Printf("Sent current level to all clients: %d\n", Level)
 		}
 	}
 }
