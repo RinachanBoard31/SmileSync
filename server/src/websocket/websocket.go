@@ -309,17 +309,17 @@ func (s *Server) HandleMessages() {
 			s.mu.Unlock()
 			log.Printf("Sent a new image url to all clients: %s\n", imageUrl)
 		// Levelが送信された場合
-		case Level := <-s.levelBroadcast:
+		case level := <-s.levelBroadcast:
 			s.mu.Lock()
 			levelMsg := Message{
 				Type:  "level",
-				Level: Level,
+				Level: level,
 			}
 			for client := range s.clients {
 				s.sendMessage(client, levelMsg)
 			}
 			s.mu.Unlock()
-			log.Printf("Sent current level to all clients: %d\n", Level)
+			log.Printf("Sent current level to all clients: %d\n", level)
 		}
 	}
 }
