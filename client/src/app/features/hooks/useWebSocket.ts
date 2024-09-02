@@ -15,7 +15,7 @@ export const startWebSocket = (
         return;
     }
     // 1. websocketオブジェクトを生成し、サーバとの接続を開始
-    const websocket = new ReconnectingWebSocket(`${process.env.NEXT_PUBLIC_CLIENT_WEBSOCKET}/ws`);
+    const websocket = new ReconnectingWebSocket(`${process.env.NEXT_PUBLIC_SERVER_WEBSOCKET}/ws`);
     socketRef.current = websocket;
     // 2. websocketに自分のnicknameを教える
     websocket.onopen = () => {

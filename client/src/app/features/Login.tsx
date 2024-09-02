@@ -19,7 +19,7 @@ const Login: React.FC = () => {
 
     const handleLogin = async () => {
         try{
-            const response = await fetch(`${process.env.NEXT_PUBLIC_CLIENT_ADDRESS}/login`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_ADDRESS}/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ password: password }),
