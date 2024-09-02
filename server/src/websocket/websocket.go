@@ -210,11 +210,19 @@ func (s *Server) handleSmilePoint(message Message) {
 	}
 	s.mu.Unlock()
 
-	// レベルが変化していたら全てのClientに新しいLevelを送信
+	// レベルが変化していたらFirestoreにLevelを保存
 	if previousLevel != s.Level {
+		firestoreSmileLevelField := firebase.SmileLevel{
+			Timestamp: message.Timestamp,
+			Level:     s.Level,
+		}
+		if err := firebase.SaveSmileLevel(firestoreSmileLevelField); err != nil {
+			log.Println("Error inserting smile_level into Firestore: ", err)
+		}
+		// 全てのClientに新しいLevelを送信
 		s.levelBroadcast <- s.Level
 
-		// if s.totalSmilePoint >= 100 && s.currentImageUrl == "" {
+		// 新しいImageUrlを生成し、Firestoreに保存
 		imageUrl, err := generateImageUrl()
 		if err == nil && imageUrl != "" {
 			firestoreSmileImageField := firebase.SmileImage{
