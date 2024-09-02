@@ -9,8 +9,8 @@ on:
       - main
 
 env:
-  NEXT_PUBLIC_CLIENT_IP: ${{ secrets.NEXT_PUBLIC_CLIENT_IP }}
-  NEXT_PUBLIC_PORT: ${{ secrets.NEXT_PUBLIC_PORT }}
+  NEXT_PUBLIC_CLIENT_ADDRESS: ${{ secrets.NEXT_PUBLIC_CLIENT_ADDRESS }}
+  NEXT_PUBLIC_CLIENT_WEBSOCKET: ${{ secrets.NEXT_PUBLIC_CLIENT_WEBSOCKET }}
   CLIENT_ADDRESS: ${{ secrets.CLIENT_ADDRESS }}
   LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
   PORT: ${{ secrets.PORT }}
@@ -36,8 +36,8 @@ jobs:
 
       - name: Create .env files
         run: |
-          echo "NEXT_PUBLIC_CLIENT_IP=${NEXT_PUBLIC_CLIENT_IP}" >> client/.env
-          echo "NEXT_PUBLIC_PORT=${NEXT_PUBLIC_PORT}" >> client/.env
+          echo "NEXT_PUBLIC_CLIENT_ADDRESS=${NEXT_PUBLIC_CLIENT_ADDRESS}" >> client/.env
+          echo "NEXT_PUBLIC_CLIENT_WEBSOCKET=${NEXT_PUBLIC_CLIENT_WEBSOCKET}" >> client/.env
           echo "CLIENT_ADDRESS=${CLIENT_ADDRESS}" >> server/.env
           echo "LOGIN_PASSWORD=${LOGIN_PASSWORD}" >> server/.env
           echo "PORT=${PORT}" >> server/.env
