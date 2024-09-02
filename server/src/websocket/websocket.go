@@ -312,3 +312,4 @@ func generateImageUrl() (imageUrl string, err error) {
 	}
 	return "", nil
 }
+
