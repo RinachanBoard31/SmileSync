@@ -32,6 +32,7 @@ type Message struct {
 	Text            string    `json:"text,omitempty"`
 	Point           int       `json:"point,omitempty"`
 	TotalSmilePoint int       `json:"totalSmilePoint,omitempty"`
+	TotalIdeas      int       `json:"totalIdeas,omitempty"`
 	ClientsList     []string  `json:"clientsList,omitempty"`
 	ImageUrl        string    `json:"imageUrl,omitempty"`
 }
@@ -40,9 +41,11 @@ type Server struct {
 	clients         map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
 	broadcast       chan Message
 	smileBroadcast  chan int
+	ideaBroadcast   chan int
 	imageBroadcast  chan string
 	messages        []Message
 	totalSmilePoint int
+	totalIdeas      int
 	currentImageUrl string
 	mu              sync.Mutex
 }
@@ -52,6 +55,7 @@ func NewServer() *Server {
 		clients:         make(map[*websocket.Conn]string),
 		broadcast:       make(chan Message),
 		smileBroadcast:  make(chan int),
+		ideaBroadcast:   make(chan int),
 		imageBroadcast:  make(chan string),
 		messages:        make([]Message, 0),
 		totalSmilePoint: 0,
@@ -100,12 +104,19 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 		s.sendMessage(conn, msg)
 	}
 
-	// これまでのSmilePointを新しいClientに送信
+	// 現在のSmilePointを新しいClientに送信
 	initialSmilePoint := Message{
 		Type:            "smilePoint",
 		TotalSmilePoint: s.totalSmilePoint,
 	}
 	s.sendMessage(conn, initialSmilePoint)
+
+	// 現在のIdea数を新しいClientに送信
+	initialIdea := Message{
+		Type:       "idea",
+		TotalIdeas: s.totalIdeas,
+	}
+	s.sendMessage(conn, initialIdea)
 
 	// 現在のImageUrlを新しいClientに送信
 	if s.currentImageUrl != "" {
@@ -137,6 +148,8 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 			s.handleMessage(receivedMsg)
 		} else if receivedMsg.Type == "smilePoint" {
 			s.handleSmilePoint(receivedMsg)
+		} else if receivedMsg.Type == "idea" {
+			s.handleIdea(receivedMsg)
 		}
 		log.Printf("Received: %v", receivedMsg)
 	}
@@ -190,6 +203,23 @@ func (s *Server) handleSmilePoint(message Message) {
 	}
 }
 
+func (s *Server) handleIdea(message Message) {
+	firestoreIdeaField := firebase.SmileIdea{
+		Timestamp: message.Timestamp,
+		ClientId:  message.ClientId,
+		Nickname:  message.Nickname,
+	}
+	if err := firebase.SaveSmileIdea(firestoreIdeaField); err != nil {
+		log.Println("Error inserting idea into Firestore: ", err)
+	}
+	s.mu.Lock()
+	s.totalIdeas++
+	s.mu.Unlock()
+
+	// 他の全てのClientにIdea数を送信
+	s.ideaBroadcast <- s.totalIdeas
+}
+
 func (s *Server) HandleMessages() {
 	// メッセージを待ち受け、全てのClientに送信
 	for {
@@ -214,6 +244,18 @@ func (s *Server) HandleMessages() {
 			}
 			s.mu.Unlock()
 			log.Printf("Sent total smile point to all clients: %dpt\n", totalSmilePoint)
+		// Ideaが送信された場合
+		case totalIdeas := <-s.ideaBroadcast:
+			s.mu.Lock()
+			totalIdeasMsg := Message{
+				Type:       "idea",
+				TotalIdeas: totalIdeas,
+			}
+			for client := range s.clients {
+				s.sendMessage(client, totalIdeasMsg)
+			}
+			s.mu.Unlock()
+			log.Printf("Sent total ideas to all clients: %d ideas\n", totalIdeas)
 		// ImageUrlが送信された場合
 		case imageUrl := <-s.imageBroadcast:
 			s.mu.Lock()
@@ -312,4 +354,3 @@ func generateImageUrl() (imageUrl string, err error) {
 	}
 	return "", nil
 }
-

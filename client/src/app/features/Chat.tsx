@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef, use } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import * as tf from '@tensorflow/tfjs';
 
-import { startWebSocket, stopWebSocket, sendMessage, sendSmilePoint } from "./hooks/useWebSocket";
+import { startWebSocket, stopWebSocket, sendMessage, sendSmilePoint, sendIdea } from "./hooks/useWebSocket";
 import { useSmileDetection } from "./hooks/useSmileDetection";
 import { useUserAuthentication } from "./hooks/useUserAuthentication";
 
@@ -16,6 +16,7 @@ import OnOffButton from "./components/OnOffButton";
 import ReconnectingWebSocket from "reconnecting-websocket";
 import ConnectionStatusButton from "./components/ConnectionStatusButton";
 import LoadingScreen from "./components/LoadingScreen";
+import IdeasButton from "./components/IdeasButton";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -29,6 +30,7 @@ const Chat: React.FC = () => {
     const [nickname , setNickname] = useState<string>("");
     const [smilePoint, setSmilePoint] = useState(0);
     const [totalSmilePoint, setTotalSmilePoint] = useState(0);
+    const [totalIdeas, setTotalIdeas] = useState(0);
     const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
     const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
     const { smileProb, userExpressions } = useSmileDetection(videoRef);
@@ -91,6 +93,13 @@ const Chat: React.FC = () => {
         }
     }, [smileProb]);
 
+    // Idea数が変化したら発火
+    useEffect(() => {
+        if (totalIdeas) {
+            console.log("Total ideas updated: ", totalIdeas);
+        }
+    }, [totalIdeas]);
+
     // 画像のURLが更新されたら発火
     useEffect(() => {
         if (currentImage) {
@@ -107,14 +116,20 @@ const Chat: React.FC = () => {
                         <ConnectionStatusButton status={status}/>
                     </div>
                     <div>
-                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setCurrentImage, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
+                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
                         <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setClientsList, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
+                    </div>
+                    <div>
+                        <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                     </div>
                     <div>
                         <p>笑顔ポイント: {smilePoint}</p>
                     </div>
                     <div>
                         <p>合計笑顔ポイント：{totalSmilePoint}</p>
+                    </div>
+                    <div>
+                        <p>合計アイデア数：{totalIdeas}</p>
                     </div>
                     <div>
                         <h2>Connected Clients:</h2>

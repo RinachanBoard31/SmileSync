@@ -6,6 +6,7 @@ export const startWebSocket = (
     nickname: string,
     setMessages: Dispatch<SetStateAction<string[]>>,
     setTotalSmilePoint: Dispatch<SetStateAction<number>>,
+    setTotalIdeas: Dispatch<SetStateAction<number>>,
     setCurrentImage: Dispatch<SetStateAction<string>>,
     setClientsList: Dispatch<SetStateAction<string[]>>,
     setStatus: Dispatch<SetStateAction<number>>,  // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
@@ -43,6 +44,8 @@ export const startWebSocket = (
                 setTotalSmilePoint(data.totalSmilePoint);
             } else if (data.type === "clientsList") {
                 setClientsList(data.clientsList);
+            } else if (data.type === "idea") {
+                setTotalIdeas(data.totalIdeas);
             } else if (data.type === "imageUrl") {
                 setCurrentImage(data.imageUrl);
             }
@@ -110,3 +113,22 @@ export const sendSmilePoint = (
         setStatus(3);
     }
 };
+
+export const sendIdea = (
+    socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
+    clientId: string,
+    nickname: string,
+    setStatus: Dispatch<SetStateAction<number>>,
+) => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        const json = JSON.stringify({ 
+            type: "idea",
+            client_id: clientId, 
+            nickname: nickname, 
+        });
+        socketRef.current.send(json);
+        console.log("Idea sent!");
+    } else {
+        setStatus(3);
+    }
+}
