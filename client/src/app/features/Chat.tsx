@@ -119,7 +119,7 @@ const Chat: React.FC = () => {
         <>
             {isLoading ? ( <LoadingScreen /> ) : (
                 <>
-                    <h1>WebSocket Chat</h1>
+                    <h1>SmileSync</h1>
                     <div>
                         <ConnectionStatusButton status={status}/>
                     </div>
