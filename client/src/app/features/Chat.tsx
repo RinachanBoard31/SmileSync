@@ -115,6 +115,15 @@ const Chat: React.FC = () => {
         }
     }, [level]);
 
+    // WebSocket接続と切断のハンドラー
+    const handleWebSocket = () => {
+        if (status === 1) {
+            stopWebSocket(socketRef, setMessages, setClientsList, setStatus);
+        } else {
+            startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus);
+        }
+    };
+
     return (
         <>
             {isLoading ? ( <LoadingScreen /> ) : (
@@ -124,8 +133,7 @@ const Chat: React.FC = () => {
                         <ConnectionStatusButton status={status}/>
                     </div>
                     <div>
-                        <OnOffButton onClick={() => startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus)} disabled={status === 1}>Connect</OnOffButton>
-                        <OnOffButton onClick={() => stopWebSocket(socketRef, setMessages, setClientsList, setStatus)} disabled={status !== 1}>Disconnect</OnOffButton>
+                        <OnOffButton onClick={handleWebSocket} isConnected={status === 1} />
                     </div>
                     <div>
                         <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
