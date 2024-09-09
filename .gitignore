@@ -26,4 +26,4 @@ go.work.sum
 .env
 
 # secret auth file
-smilesync-service-account.json
+*service-account.json
