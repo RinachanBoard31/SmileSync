@@ -34,7 +34,7 @@ const Chat: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
     const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
     const [level, setLevel] = useState(1);
-    const { smileProb, userExpressions } = useSmileDetection(videoRef);
+    const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
     // 認証通ってなかったらloginページにリダイレクト
     useUserAuthentication(router);
@@ -126,43 +126,49 @@ const Chat: React.FC = () => {
 
     return (
         <>
-            {isLoading ? ( <LoadingScreen /> ) : (
-                <>
-                    <h1>SmileSync</h1>
-                    <div>
+            {isLoading ? (
+                <LoadingScreen />
+            ) : (
+                <div className="grid grid-cols-2 grid-rows-2 gap-4 h-screen">
+                    {/* 左上 */}
+                    <div className="p-4 border rounded-lg space-y-4">
+                        <h1>SmileSync</h1>
                         <ConnectionStatusButton status={status}/>
-                    </div>
-                    <div>
                         <OnOffButton onClick={handleWebSocket} isConnected={status === 1} />
-                    </div>
-                    <div>
-                        <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
-                    </div>
-                    <div>
-                        <p>笑顔ポイント: {smilePoint}</p>
-                    </div>
-                    <div>
-                        <p>合計笑顔ポイント：{totalSmilePoint}</p>
-                    </div>
-                    <div>
-                        <p>合計アイデア数：{totalIdeas}</p>
-                    </div>
-                    <div>
-                        <p>現在のレベル：{level}</p>
-                    </div>
-                    <div>
+                        <div>
+                            <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
+                        </div>
                         <h2>Connected Clients:</h2>
                         {clientsList.map((client, index) => (
                             <div key={index}>{client}</div>
                         ))}
                     </div>
-                    <Webcam videoRef={videoRef} />
-                    <SmileStatus smileProb={smileProb} />
-                    <UserExpressions userExpressions={userExpressions} />
-                    <div>
-                        <img src={currentImage} alt="Smile Level Image" />
+
+                    {/* 右上 */}
+                    <div className="p-4 border rounded-lg flex justify-center items-center">
+                        <Webcam videoRef={videoRef} stream={stream} />
                     </div>
-                </>
+
+                    {/* 左下 */}
+                    <div className="p-4 border rounded-lg">
+                        <div>
+                            <SmileStatus smileProb={smileProb} />
+                            <UserExpressions userExpressions={userExpressions} />
+                        </div>
+                        <br />
+                        <div className="rounded-lg border border-gray-400 p-2">
+                            <p>笑顔ポイント: {smilePoint}</p>
+                            <p>合計笑顔ポイント: {totalSmilePoint}</p>
+                            <p>合計アイデア数: {totalIdeas}</p>
+                            <p>現在のレベル: {level}</p>
+                        </div>
+                    </div>
+
+                    {/* 右下 */}
+                    <div className="p-4 border rounded-lg">
+                        <img src={currentImage} alt="Smile Level Image" className="w-full h-full object-cover rounded-lg" />
+                    </div>
+                </div>
             )}
         </>
     );

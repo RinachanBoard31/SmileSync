@@ -6,6 +6,7 @@ export const useSmileDetection = (
 ) => {
     const [smileProb, setSmileProb] = useState(0);
     const [userExpressions, setUserExpressions] = useState<object | null>(null);
+    const [stream, setStream] = useState<MediaStream | null>(null);
 
     useEffect(() => {
         const loadModels = async () => {
@@ -15,9 +16,10 @@ export const useSmileDetection = (
 
         const getMedia = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                setStream(mediaStream);
                 if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
+                    videoRef.current.srcObject = mediaStream;
                 }
             } catch (err) {
                 console.error("Error accessing camera:", err);
@@ -48,5 +50,5 @@ export const useSmileDetection = (
         initialize();
     }, [videoRef]);
 
-    return { smileProb, userExpressions };
+    return { smileProb, userExpressions, stream };
 };
