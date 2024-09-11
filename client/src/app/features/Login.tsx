@@ -43,7 +43,7 @@ const Login: React.FC = () => {
             {isLoading ? ( <LoadingScreen /> ) : (
                 <>
                     <div>
-                        <h1>三└(┐卍^o^)卍 ﾛｸﾞｨｨｲｲｲｲﾝﾝﾝ</h1>
+                        <h1>SmileSync</h1>
                         {error && <p style={{ color: "red" }}>{error}</p>} {/* errorに値がある場合、エラーメッセージを赤色で表示する */}
                         <h2>Nickname</h2>
                         <input
