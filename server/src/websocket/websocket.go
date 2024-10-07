@@ -203,9 +203,9 @@ func (s *Server) handleSmilePoint(message Message) {
 		s.Level = 5
 	case s.totalSmilePoint >= 1000:
 		s.Level = 4
-	case s.totalSmilePoint >= 500:
+	case s.totalSmilePoint >= 100: // 500
 		s.Level = 3
-	case s.totalSmilePoint >= 200:
+	case s.totalSmilePoint >= 30: // 200
 		s.Level = 2
 	}
 	s.mu.Unlock()
