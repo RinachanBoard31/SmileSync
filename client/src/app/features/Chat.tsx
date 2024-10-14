@@ -19,6 +19,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import IdeasButton from "./components/IdeasButton";
 import ResizeButton from "./components/ResizeButton";
 import BorderEffect from "./components/BorderEffect";
+import Heart from "./components/Heart";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -37,6 +38,7 @@ const Chat: React.FC = () => {
     const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
     const [level, setLevel] = useState(1);
     const [isSmallScreen, setIsSmallScreen] = useState(false);
+    const [hearts, setHearts] = useState<{ id: string }[]>([]);
 
     const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -98,6 +100,17 @@ const Chat: React.FC = () => {
         }
     }, [smileProb]);
 
+    // totalSmilePointが変化したら発火してハート生成
+    useEffect(() => {
+        const handleAddHeart = () => {
+            const newHeart = { id: uuidv4() };
+            setHearts((prevHearts) => [...prevHearts, newHeart]);
+        };
+        if (totalSmilePoint > 0) {
+            handleAddHeart();
+        }
+    }, [totalSmilePoint]);
+
     // Idea数が変化したら発火
     useEffect(() => {
         if (totalIdeas) {
@@ -124,6 +137,11 @@ const Chat: React.FC = () => {
         setIsSmallScreen(!isSmallScreen);
     }
 
+    // ハートを削除
+    const removeHeart = (id: string) => {
+        setHearts((prevHearts) => prevHearts.filter((heart) => heart.id !== id));
+    }
+
     // WebSocket接続と切断のハンドラー
     const handleWebSocket = () => {
         if (status === 1) {
@@ -144,6 +162,11 @@ const Chat: React.FC = () => {
                         onClick={toggleFullScreen}
                         label={isSmallScreen ? "元のサイズに戻す" : "最小表示"}
                     />
+
+                    {/* ハート */}
+                    {hearts.map((heart) => (
+                        <Heart key={heart.id} id={heart.id} removeHeart={removeHeart} />
+                    ))}
 
                     {/* 最小表示モード */}
                     {isSmallScreen ? (

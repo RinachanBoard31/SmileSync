@@ -70,3 +70,24 @@ h2 {
         background-position: 0% 50%;
     }
 }
+
+.heart {
+    position: fixed;
+    bottom: 0;
+    font-size: 5rem;
+    z-index: 9999;
+    animation: floating 5s ease-in-out forwards;
+}
+
+@keyframes floating {
+    0% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-300px) rotate(10deg);
+    }
+    100% {
+        transform: translateY(-600px) rotate(-10deg);
+        opacity: 0;
+    }
+}
