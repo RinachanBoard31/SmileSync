@@ -17,6 +17,7 @@ import ReconnectingWebSocket from "reconnecting-websocket";
 import ConnectionStatusButton from "./components/ConnectionStatusButton";
 import LoadingScreen from "./components/LoadingScreen";
 import IdeasButton from "./components/IdeasButton";
+import BorderEffect from "./components/BorderEffect";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -130,6 +131,9 @@ const Chat: React.FC = () => {
                 <LoadingScreen />
             ) : (
                 <div className="grid grid-cols-2 grid-rows-2 gap-4 h-screen">
+                    {/* 外枠 */}
+                    <BorderEffect smileProb={smileProb} />
+
                     {/* 左上 */}
                     <div className="p-4 border rounded-lg space-y-4">
                         <h1>SmileSync</h1>
