@@ -27,3 +27,6 @@ go.work.sum
 
 # secret auth file
 *service-account.json
+
+# debug file
+server/src/__debug_*

@@ -17,6 +17,7 @@ import ReconnectingWebSocket from "reconnecting-websocket";
 import ConnectionStatusButton from "./components/ConnectionStatusButton";
 import LoadingScreen from "./components/LoadingScreen";
 import IdeasButton from "./components/IdeasButton";
+import ResizeButton from "./components/ResizeButton";
 import BorderEffect from "./components/BorderEffect";
 
 const Chat: React.FC = () => {
@@ -35,6 +36,8 @@ const Chat: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
     const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
     const [level, setLevel] = useState(1);
+    const [isSmallScreen, setIsSmallScreen] = useState(false);
+
     const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
     // 認証通ってなかったらloginページにリダイレクト
@@ -116,6 +119,11 @@ const Chat: React.FC = () => {
         }
     }, [level]);
 
+    // ウィンドウサイズの切り替え
+    const toggleFullScreen = () => {
+        setIsSmallScreen(!isSmallScreen);
+    }
+
     // WebSocket接続と切断のハンドラー
     const handleWebSocket = () => {
         if (status === 1) {
@@ -130,49 +138,84 @@ const Chat: React.FC = () => {
             {isLoading ? (
                 <LoadingScreen />
             ) : (
-                <div className="grid grid-cols-2 grid-rows-2 gap-4 h-screen">
-                    {/* 外枠 */}
-                    <BorderEffect smileProb={smileProb} />
+                <>
+                    {/* ウィンドウサイズ切り替えボタン */}
+                    <ResizeButton
+                        onClick={toggleFullScreen}
+                        label={isSmallScreen ? "元のサイズに戻す" : "最小表示"}
+                    />
 
-                    {/* 左上 */}
-                    <div className="p-4 border rounded-lg space-y-4">
-                        <h1>SmileSync</h1>
-                        <ConnectionStatusButton status={status}/>
-                        <OnOffButton onClick={handleWebSocket} isConnected={status === 1} />
-                        <div>
-                            <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
+                    {/* 最小表示モード */}
+                    {isSmallScreen ? (
+                        <div className="h-screen w-screen flex items-center justify-center overflow-hidden box-border">
+                            {/* 外枠 */}
+                            <BorderEffect smileProb={smileProb} />
+
+                            <div className="grid grid-cols-3 grid-rows-1 gap-3 w-full h-full">
+                                {/* 左側 */}
+                                <div className="p-4 border rounded-lg space-y-4 h-full flex flex-col justify-center items-center">
+                                    <ConnectionStatusButton status={status} />
+                                    <OnOffButton onClick={handleWebSocket} isConnected={status === 1} />
+                                    <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
+                                </div>
+
+                                {/* 中央 (Webcam) */}
+                                <div className="p-4 border rounded-lg flex justify-center items-center h-full">
+                                    <Webcam videoRef={videoRef} stream={stream} />
+                                </div>
+
+                                {/* 右側 (currentImage) */}
+                                <div className="p-4 border rounded-lg h-full">
+                                    <img src={currentImage} alt="Smile Level Image" className="w-full h-full object-cover rounded-lg" />
+                                </div>
+                            </div>
                         </div>
-                        <h2>Connected Clients:</h2>
-                        {clientsList.map((client, index) => (
-                            <div key={index}>{client}</div>
-                        ))}
-                    </div>
+                    ) : (
+                        <div className="grid grid-cols-2 grid-rows-2 gap-4 h-screen w-screen overflow-hidden flex box-boe">
+                            {/* 外枠 */}
+                            <BorderEffect smileProb={smileProb} />
 
-                    {/* 右上 */}
-                    <div className="p-4 border rounded-lg flex justify-center items-center">
-                        <Webcam videoRef={videoRef} stream={stream} />
-                    </div>
+                            {/* 左上 */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <h1>SmileSync</h1>
+                                <ConnectionStatusButton status={status}/>
+                                <OnOffButton onClick={handleWebSocket} isConnected={status === 1} />
+                                <div>
+                                    <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
+                                </div>
+                                <h2>Connected Clients:</h2>
+                                {clientsList.map((client, index) => (
+                                    <div key={index}>{client}</div>
+                                ))}
+                            </div>
 
-                    {/* 左下 */}
-                    <div className="p-4 border rounded-lg">
-                        <div>
-                            <SmileStatus smileProb={smileProb} />
-                            <UserExpressions userExpressions={userExpressions} />
+                            {/* 右上 */}
+                            <div className="p-4 border rounded-lg flex justify-center items-center">
+                                <Webcam videoRef={videoRef} stream={stream} />
+                            </div>
+
+                            {/* 左下 */}
+                            <div className="p-4 border rounded-lg">
+                                <div>
+                                    <SmileStatus smileProb={smileProb} />
+                                    <UserExpressions userExpressions={userExpressions} />
+                                </div>
+                                <br />
+                                <div className="rounded-lg border border-gray-400 p-2">
+                                    <p>笑顔ポイント: {smilePoint}</p>
+                                    <p>合計笑顔ポイント: {totalSmilePoint}</p>
+                                    <p>合計アイデア数: {totalIdeas}</p>
+                                    <p>現在のレベル: {level}</p>
+                                </div>
+                            </div>
+
+                            {/* 右下 */}
+                            <div className="p-4 border rounded-lg">
+                                <img src={currentImage} alt="Smile Level Image" className="w-full h-full object-cover rounded-lg" />
+                            </div>
                         </div>
-                        <br />
-                        <div className="rounded-lg border border-gray-400 p-2">
-                            <p>笑顔ポイント: {smilePoint}</p>
-                            <p>合計笑顔ポイント: {totalSmilePoint}</p>
-                            <p>合計アイデア数: {totalIdeas}</p>
-                            <p>現在のレベル: {level}</p>
-                        </div>
-                    </div>
-
-                    {/* 右下 */}
-                    <div className="p-4 border rounded-lg">
-                        <img src={currentImage} alt="Smile Level Image" className="w-full h-full object-cover rounded-lg" />
-                    </div>
-                </div>
+                    )}
+                </>
             )}
         </>
     );
