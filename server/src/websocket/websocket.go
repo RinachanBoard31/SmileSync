@@ -27,6 +27,7 @@ var upgrader = websocket.Upgrader{
 type Message struct {
 	Type            string    `json:"type"`
 	Timestamp       time.Time `json:"timestamp"`
+	IsMeetingActive bool      `json:"isMeetingActive,omitempty"`
 	ClientId        string    `json:"client_id"`
 	Nickname        string    `json:"nickname"`
 	Text            string    `json:"text,omitempty"`
@@ -39,6 +40,7 @@ type Message struct {
 }
 
 type Server struct {
+	isMeetingActive bool                       // 会議の開始/終了を管理
 	clients         map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
 	broadcast       chan Message
 	smileBroadcast  chan int
@@ -49,12 +51,13 @@ type Server struct {
 	totalSmilePoint int
 	totalIdeas      int
 	currentImageUrl string
-	Level           int
+	level           int
 	mu              sync.Mutex
 }
 
 func NewServer() *Server {
 	return &Server{
+		isMeetingActive: false,
 		clients:         make(map[*websocket.Conn]string),
 		broadcast:       make(chan Message),
 		smileBroadcast:  make(chan int),
@@ -65,8 +68,27 @@ func NewServer() *Server {
 		totalSmilePoint: 0,
 		totalIdeas:      0,
 		currentImageUrl: "",
-		Level:           1,
+		level:           1,
 	}
+}
+
+func (s *Server) handleMeetingStatus(message Message) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if message.IsMeetingActive == true {
+		s.isMeetingActive = true
+		log.Println("Meeting started")
+	} else {
+		s.isMeetingActive = false
+		log.Println("Meeting ended")
+	}
+
+	meetingStatusMsg := Message{
+		Type:            "meetingStatus",
+		IsMeetingActive: s.isMeetingActive,
+	}
+	s.broadcast <- meetingStatusMsg
 }
 
 func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +132,13 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 		s.sendMessage(conn, msg)
 	}
 
+	// 会議の状態を新しいClientに送信
+	meetingStatusMsg := Message{
+		Type:            "meetingStatus",
+		IsMeetingActive: s.isMeetingActive,
+	}
+	s.sendMessage(conn, meetingStatusMsg)
+
 	// 現在のSmilePointを新しいClientに送信
 	initialSmilePoint := Message{
 		Type:            "smilePoint",
@@ -136,7 +165,7 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 	// 現在のLevelを新しいClientに送信
 	initialLevel := Message{
 		Type:  "level",
-		Level: s.Level,
+		Level: s.level,
 	}
 	s.sendMessage(conn, initialLevel)
 
@@ -155,15 +184,28 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 			log.Println("Error unmarshaling message: ", err)
 			continue
 		}
+		log.Printf("Received: %v", receivedMsg)
 
 		receivedMsg.Timestamp = time.Now()
-		if receivedMsg.Type == "message" {
-			s.handleMessage(receivedMsg)
-		} else if receivedMsg.Type == "smilePoint" {
-			s.handleSmilePoint(receivedMsg)
-		} else if receivedMsg.Type == "idea" {
-			s.handleIdea(receivedMsg)
+
+		// 会議が開始されている場合のみ更新を受け付ける
+		if s.isMeetingActive {
+			if receivedMsg.Type == "message" {
+				s.handleMessage(receivedMsg)
+			} else if receivedMsg.Type == "smilePoint" {
+				s.handleSmilePoint(receivedMsg)
+			} else if receivedMsg.Type == "idea" {
+				s.handleIdea(receivedMsg)
+			}
+		} else {
+			log.Println("Meeting is not active")
 		}
+
+		// 会議の状態を更新
+		if receivedMsg.Type == "meetingStatus" {
+			s.handleMeetingStatus(receivedMsg)
+		}
+
 		log.Printf("Received: %v", receivedMsg)
 	}
 }
@@ -197,30 +239,30 @@ func (s *Server) handleSmilePoint(message Message) {
 
 	// レベルの処理
 	s.mu.Lock()
-	previousLevel := s.Level
+	previousLevel := s.level
 	switch {
 	case s.totalSmilePoint >= 2000:
-		s.Level = 5
+		s.level = 5
 	case s.totalSmilePoint >= 1000:
-		s.Level = 4
+		s.level = 4
 	case s.totalSmilePoint >= 100: // 500
-		s.Level = 3
+		s.level = 3
 	case s.totalSmilePoint >= 30: // 200
-		s.Level = 2
+		s.level = 2
 	}
 	s.mu.Unlock()
 
 	// レベルが変化していたらFirestoreにLevelを保存
-	if previousLevel != s.Level {
+	if previousLevel != s.level {
 		firestoreSmileLevelField := firebase.SmileLevel{
 			Timestamp: message.Timestamp,
-			Level:     s.Level,
+			Level:     s.level,
 		}
 		if err := firebase.SaveSmileLevel(firestoreSmileLevelField); err != nil {
 			log.Println("Error inserting smile_level into Firestore: ", err)
 		}
 		// 全てのClientに新しいLevelを送信
-		s.levelBroadcast <- s.Level
+		s.levelBroadcast <- s.level
 
 		// 新しいImageUrlを生成し、Firestoreに保存
 		imageUrl, err := generateImageUrl()

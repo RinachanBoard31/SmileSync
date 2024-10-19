@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import * as tf from '@tensorflow/tfjs';
 
-import { startWebSocket, stopWebSocket, sendMessage, sendSmilePoint, sendIdea } from "./hooks/useWebSocket";
+import { startConnectWebSocket, sendMessage, sendSmilePoint, sendIdea, sendMeetingStatus } from "./hooks/useWebSocket";
 import { useSmileDetection } from "./hooks/useSmileDetection";
 import { useUserAuthentication } from "./hooks/useUserAuthentication";
 
@@ -29,7 +29,7 @@ const Chat: React.FC = () => {
 
     const [messages, setMessages] = useState<string[]>([]); // websocketでやりとりしているmessage
     const [clientsList, setClientsList] = useState<string[]>([]); // websocketに接続しているclientのリスト
-    const [status, setStatus] = useState(2); // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
+    const [status, setStatus] = useState(2); // 0: 接続待ち, 1: 接続完了, 2: 接続終了, 3: 接続エラー
     const [clientId, setClientId] = useState<string>("");
     const [nickname , setNickname] = useState<string>("");
     const [smilePoint, setSmilePoint] = useState(0);
@@ -41,6 +41,7 @@ const Chat: React.FC = () => {
     const [isSmallScreen, setIsSmallScreen] = useState(false);
     const [hearts, setHearts] = useState<{ id: string }[]>([]);
     const [foods, setFoods] = useState<{ id: string, foodsIndex: number }[]>([]);
+    const [isMeetingActive, setIsMeetingActive] = useState(false); // Serverサイドの会議開始/終了の制御
 
     const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -86,6 +87,11 @@ const Chat: React.FC = () => {
         return () => {
             window.removeEventListener("load", () => setIsLoading(false));
         }
+    }, []);
+
+    // デフォルトでwebSocketに接続
+    useEffect(() => {
+        startConnectWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus);
     }, []);
 
     // smilePointが変化したら発火
@@ -164,12 +170,20 @@ const Chat: React.FC = () => {
         setFoods((prevFoods) => prevFoods.filter((food) => food.id !== id));
     }
 
-    // WebSocket接続と切断のハンドラー
-    const handleWebSocket = () => {
+    // Serverサイドの会議開始/終了の制御
+    const handleMeetingStatus = (changeTo: boolean) => {
+        if (socketRef.current) {
+            sendMeetingStatus(socketRef, clientId, nickname, changeTo, setStatus);
+            setIsMeetingActive(changeTo);
+        }
+    }
+
+    // ON/OFFボタンの処理
+    const handleOnOffButtonClick = () => {
         if (status === 1) {
-            stopWebSocket(socketRef, setMessages, setClientsList, setStatus);
+            handleMeetingStatus(false);
         } else {
-            startWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus);
+            handleMeetingStatus(true);
         }
     };
 
@@ -205,7 +219,7 @@ const Chat: React.FC = () => {
                                 {/* 左側 */}
                                 <div className="p-4 border rounded-lg space-y-4 h-full flex flex-col justify-center items-center">
                                     <ConnectionStatusButton status={status} />
-                                    <OnOffButton onClick={handleWebSocket} isConnected={status === 1} />
+                                    <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
 
@@ -229,7 +243,7 @@ const Chat: React.FC = () => {
                             <div className="p-4 border rounded-lg space-y-4">
                                 <h1>SmileSync</h1>
                                 <ConnectionStatusButton status={status}/>
-                                <OnOffButton onClick={handleWebSocket} isConnected={status === 1} />
+                                <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                 <div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
