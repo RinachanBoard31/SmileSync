@@ -20,6 +20,7 @@ import IdeasButton from "./components/IdeasButton";
 import ResizeButton from "./components/ResizeButton";
 import BorderEffect from "./components/BorderEffect";
 import Heart from "./components/Heart";
+import Food from "./components/Food";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -39,6 +40,7 @@ const Chat: React.FC = () => {
     const [level, setLevel] = useState(1);
     const [isSmallScreen, setIsSmallScreen] = useState(false);
     const [hearts, setHearts] = useState<{ id: string }[]>([]);
+    const [foods, setFoods] = useState<{ id: string, foodsIndex: number }[]>([]);
 
     const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -111,10 +113,25 @@ const Chat: React.FC = () => {
         }
     }, [totalSmilePoint]);
 
-    // Idea数が変化したら発火
+    // Idea数が変化したら発火してエサ生成
     useEffect(() => {
         if (totalIdeas) {
             console.log("Total ideas updated: ", totalIdeas);
+        }
+        if (totalIdeas > 0) {
+            const index = Math.floor(Math.random() * 9); // 9種のエサからランダムに選択
+            const handleAddFoodSequentially = () => {
+                for (let i = 0; i < 30; i++) {
+                    setTimeout(() => {
+                        const newFood = { id: uuidv4(), foodsIndex: index };
+                        setFoods((prevFoods) => [...prevFoods, newFood]);
+                        setTimeout(() => {
+                            setFoods((prevFoods) => prevFoods.filter((food) => food.id !== newFood.id));
+                        }, 5000);
+                    }, i * 100);
+                }
+            };
+            handleAddFoodSequentially();
         }
     }, [totalIdeas]);
 
@@ -142,6 +159,11 @@ const Chat: React.FC = () => {
         setHearts((prevHearts) => prevHearts.filter((heart) => heart.id !== id));
     }
 
+    // エサを削除
+    const removeFood = (id: string) => {
+        setFoods((prevFoods) => prevFoods.filter((food) => food.id !== id));
+    }
+
     // WebSocket接続と切断のハンドラー
     const handleWebSocket = () => {
         if (status === 1) {
@@ -166,6 +188,11 @@ const Chat: React.FC = () => {
                     {/* ハート */}
                     {hearts.map((heart) => (
                         <Heart key={heart.id} id={heart.id} removeHeart={removeHeart} />
+                    ))}
+
+                    {/* 餌 */}
+                    {foods.map((food) => (
+                        <Food key={food.id} id={food.id} foodsIndex={food.foodsIndex} removeFood={removeFood} />
                     ))}
 
                     {/* 最小表示モード */}

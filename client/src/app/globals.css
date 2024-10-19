@@ -73,7 +73,7 @@ h2 {
 
 .heart {
     position: fixed;
-    bottom: 0;
+    bottom: -100px;
     font-size: 5rem;
     z-index: 9999;
     animation: floating 5s ease-in-out forwards;
@@ -81,7 +81,28 @@ h2 {
 
 @keyframes floating {
     0% {
-        transform: translateY(0px) rotate(0deg);
+        transform: translateY(0px) rotate(-10deg);
+    }
+    50% {
+        transform: translateY(-300px) rotate(10deg);
+    }
+    100% {
+        transform: translateY(-600px) rotate(-10deg);
+        opacity: 0;
+    }
+}
+
+.food {
+    position: fixed;
+    bottom: -100px;
+    font-size: 5rem;
+    z-index: 9999;
+    animation: foodFloat 5s ease-in-out forwards;
+}
+
+@keyframes foodFloat {
+    0% {
+        transform: translateY(0) rotate(0deg);
     }
     50% {
         transform: translateY(-300px) rotate(10deg);
