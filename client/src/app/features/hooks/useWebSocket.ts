@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 
-export const startWebSocket = (
+export const startConnectWebSocket = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     nickname: string,
     setMessages: Dispatch<SetStateAction<string[]>>,
@@ -10,7 +10,7 @@ export const startWebSocket = (
     setCurrentImage: Dispatch<SetStateAction<string>>,
     setLevel: Dispatch<SetStateAction<number>>,
     setClientsList: Dispatch<SetStateAction<string[]>>,
-    setStatus: Dispatch<SetStateAction<number>>,  // 0: 接続中, 1: 接続完了, 2: 接続終了, 3: 接続エラー
+    setStatus: Dispatch<SetStateAction<number>>,  // 0: 接続待ち, 1: 接続完了, 2: 接続終了, 3: 接続エラー
 ) => {
     // 0. すでに接続されている場合は何もしない
     if (socketRef.current) {
@@ -21,7 +21,7 @@ export const startWebSocket = (
     socketRef.current = websocket;
     // 2. websocketに自分のnicknameを教える
     websocket.onopen = () => {
-        setStatus(1);
+        setStatus(0);
         const initMessage = JSON.stringify({ 
             type: "init",
             nickname: nickname,
@@ -51,6 +51,14 @@ export const startWebSocket = (
                 setCurrentImage(data.imageUrl);
             } else if (data.type === "level") {
                 setLevel(data.level);
+            } else if (data.type == "meetingStatus") {
+                if (data.isMeetingActive === true) {
+                    console.log("Meeting is now active");
+                    setStatus(1);
+                } else {
+                    console.log("Meeting is now inactive");
+                    setStatus(0);
+                }
             }
         } catch (error) {
             console.error("Error parsing message:", error);
@@ -58,7 +66,7 @@ export const startWebSocket = (
     });
 };
 
-export const stopWebSocket = (
+export const stopConnectWebSocket = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     setMessages: Dispatch<SetStateAction<string[]>>,
     setClientsList: Dispatch<SetStateAction<string[]>>,
@@ -131,6 +139,27 @@ export const sendIdea = (
         });
         socketRef.current.send(json);
         console.log("Idea sent!");
+    } else {
+        setStatus(3);
+    }
+}
+
+export const sendMeetingStatus = (
+    socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
+    clientId: string,
+    nickname: string,
+    changeTo: boolean,
+    setStatus: Dispatch<SetStateAction<number>>,
+) => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        const json = JSON.stringify({ 
+            type: "meetingStatus",
+            client_id: clientId, 
+            nickname: nickname, 
+            isMeetingActive: changeTo,
+        });
+        socketRef.current.send(json);
+        console.log("Meeting status sent!");
     } else {
         setStatus(3);
     }
