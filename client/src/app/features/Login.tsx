@@ -79,4 +79,4 @@ const Login: React.FC = () => {
     );
 };
 
-export default Login;
+export default Login; // MEMO: admin用のパスワードはserver側で管理
