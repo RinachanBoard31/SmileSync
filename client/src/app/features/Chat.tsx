@@ -219,7 +219,9 @@ const Chat: React.FC = () => {
                                 {/* 左側 */}
                                 <div className="p-4 border rounded-lg space-y-4 h-full flex flex-col justify-center items-center">
                                     <ConnectionStatusButton status={status} />
-                                    <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
+                                    {nickname === "admin" && (
+                                        <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
+                                    )}
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
 
@@ -243,7 +245,9 @@ const Chat: React.FC = () => {
                             <div className="p-4 border rounded-lg space-y-4">
                                 <h1>SmileSync</h1>
                                 <ConnectionStatusButton status={status}/>
-                                <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
+                                {nickname === "admin" && (
+                                    <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
+                                )}
                                 <div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
@@ -265,12 +269,14 @@ const Chat: React.FC = () => {
                                     <UserExpressions userExpressions={userExpressions} />
                                 </div>
                                 <br />
-                                <div className="rounded-lg border border-gray-400 p-2">
-                                    <p>笑顔ポイント: {smilePoint}</p>
-                                    <p>合計笑顔ポイント: {totalSmilePoint}</p>
-                                    <p>合計アイデア数: {totalIdeas}</p>
-                                    <p>現在のレベル: {level}</p>
-                                </div>
+                                {nickname === "admin" && (
+                                    <div className="rounded-lg border border-gray-400 p-2">
+                                        <p>笑顔ポイント: {smilePoint}</p>
+                                        <p>合計笑顔ポイント: {totalSmilePoint}</p>
+                                        <p>合計アイデア数: {totalIdeas}</p>
+                                        <p>現在のレベル: {level}</p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* 右下 */}
