@@ -22,11 +22,19 @@ const Login: React.FC = () => {
             const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_ADDRESS}/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ password: password }),
+                body: JSON.stringify({ 
+                    nickname: nickname,
+                    password: password 
+                }),
             });
             if (response.ok) {
                 sessionStorage.setItem("login_password", password); // tokenをsession storageに格納
-                localStorage.setItem("nickname", nickname);
+                if (nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME) {
+                    // ADMIN_NICKNAMEを隠すため、nicknameを"管理者"に上書き
+                    localStorage.setItem("nickname", "管理者");
+                } else {
+                    localStorage.setItem("nickname", nickname);
+                }
                 setError(null);
                 setIsLoading(true); // ローディング開始
                 router.push("/chat");
