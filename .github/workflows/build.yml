@@ -11,8 +11,11 @@ on:
 env:
   NEXT_PUBLIC_CLIENT_ADDRESS: ${{ secrets.NEXT_PUBLIC_SERVER_ADDRESS }}
   NEXT_PUBLIC_CLIENT_WEBSOCKET: ${{ secrets.NEXT_PUBLIC_SERVER_WEBSOCKET }}
+  NEXT_PUBLIC_ADMIN_NICKNAME: ${{ secrets.NEXT_PUBLIC_ADMIN_NICKNAME }}
   CLIENT_ADDRESS: ${{ secrets.CLIENT_ADDRESS }}
   LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+  ADMIN_NICKANME: ${{ secrets.ADMIN_NICKANME }}
+  ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
   PORT: ${{ secrets.PORT }}
   FIRESTORE_PROJECT_ID: ${{ secrets.FIRESTORE_PROJECT_ID }}
   DALLE_API_ENDPOINT: ${{ secrets.DALLE_API_ENDPOINT }}
@@ -38,8 +41,11 @@ jobs:
         run: |
           echo "NEXT_PUBLIC_CLIENT_ADDRESS=${NEXT_PUBLIC_CLIENT_ADDRESS}" >> client/.env
           echo "NEXT_PUBLIC_CLIENT_WEBSOCKET=${NEXT_PUBLIC_CLIENT_WEBSOCKET}" >> client/.env
+          echo "NEXT_PUBLIC_ADMIN_NICKNAME=${NEXT_PUBLIC_ADMIN_NICKNAME}" >> client/.env
           echo "CLIENT_ADDRESS=${CLIENT_ADDRESS}" >> server/.env
           echo "LOGIN_PASSWORD=${LOGIN_PASSWORD}" >> server/.env
+          echo "ADMIN_NICKANME=${ADMIN_NICKANME}" >> server/.env
+          echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}" >> server/.env
           echo "PORT=${PORT}" >> server/.env
           echo "FIRESTORE_PROJECT_ID=${FIRESTORE_PROJECT_ID}" >> server/.env
           echo "DALLE_API_ENDPOINT=${DALLE_API_ENDPOINT}" >> server/.env

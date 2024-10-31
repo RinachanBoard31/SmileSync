@@ -221,7 +221,7 @@ const Chat: React.FC = () => {
                                 {/* 左側 */}
                                 <div className="p-4 border rounded-lg space-y-4 h-full flex flex-col justify-center items-center">
                                     <ConnectionStatusButton status={status} />
-                                    {nickname === "admin" && (
+                                    {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                         <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                     )}
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
@@ -247,7 +247,7 @@ const Chat: React.FC = () => {
                             <div className="p-4 border rounded-lg space-y-4">
                                 <h1>SmileSync</h1>
                                 <ConnectionStatusButton status={status}/>
-                                {nickname === "admin" && (
+                                {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                     <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                 )}
                                 <div>
@@ -271,7 +271,7 @@ const Chat: React.FC = () => {
                                     <UserExpressions userExpressions={userExpressions} />
                                 </div>
                                 <br />
-                                {nickname === "admin" && (
+                                {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                     <div className="rounded-lg border border-gray-400 p-2">
                                         <p>笑顔ポイント: {smilePoint}</p>
                                         <p>合計笑顔ポイント: {totalSmilePoint}</p>
