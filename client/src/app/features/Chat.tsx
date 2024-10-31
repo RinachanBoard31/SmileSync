@@ -89,10 +89,12 @@ const Chat: React.FC = () => {
         }
     }, []);
 
-    // デフォルトでwebSocketに接続
+    // nicknameがセットされたのち、webSocketにデフォルトで接続
     useEffect(() => {
-        startConnectWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus);
-    }, []);
+        if (nickname) {
+            startConnectWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus);
+        }
+    }, [nickname]);
 
     // smilePointが変化したら発火
     useEffect(() => {
