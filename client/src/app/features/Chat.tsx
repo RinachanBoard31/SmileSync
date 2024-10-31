@@ -21,6 +21,7 @@ import ResizeButton from "./components/ResizeButton";
 import BorderEffect from "./components/BorderEffect";
 import Heart from "./components/Heart";
 import Food from "./components/Food";
+import TimerDisplay from "./components/TimerDisplay";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -225,7 +226,7 @@ const Chat: React.FC = () => {
                                     {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                         <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                     )}
-                                    <div>経過: {timer}</div>
+                                    <TimerDisplay timer={timer} />
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
 
@@ -252,7 +253,7 @@ const Chat: React.FC = () => {
                                 {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                     <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                 )}
-                                <div>経過: {timer}</div>
+                                <TimerDisplay timer={timer} />
                                 <div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
