@@ -51,29 +51,33 @@ func CloseFirestore() {
 }
 
 type SmilePoint struct {
-	Timestamp       time.Time `firestore:"timestamp"`
-	ClientId        string    `firestore:"client_id"`
-	Nickname        string    `firestore:"nickname"`
-	Point           int       `firestore:"smile_point"`
-	TotalSmilePoint int       `firestore:"total_smile_point"`
+	Timestamp         time.Time `firestore:"timestamp"`
+	SinceMeetingStart int64     `firestore:"since_meeting_start"`
+	ClientId          string    `firestore:"client_id"`
+	Nickname          string    `firestore:"nickname"`
+	Point             int       `firestore:"smile_point"`
+	TotalSmilePoint   int       `firestore:"total_smile_point"`
 }
 
 type SmileIdea struct {
-	Timestamp time.Time `firestore:"timestamp"`
-	ClientId  string    `firestore:"client_id"`
-	Nickname  string    `firestore:"nickname"`
+	Timestamp         time.Time `firestore:"timestamp"`
+	SinceMeetingStart int64     `firestore:"since_meeting_start"`
+	ClientId          string    `firestore:"client_id"`
+	Nickname          string    `firestore:"nickname"`
 }
 
 type SmileImage struct {
-	Timestamp       time.Time `firestore:"timestamp"`
-	TotalSmilePoint int       `firestore:"total_smile_point"`
-	Prompt          string    `firestore:"prompt"`
-	ImageUrl        string    `firestore:"image_url"`
+	Timestamp         time.Time `firestore:"timestamp"`
+	SinceMeetingStart int64     `firestore:"since_meeting_start"`
+	TotalSmilePoint   int       `firestore:"total_smile_point"`
+	Prompt            string    `firestore:"prompt"`
+	ImageUrl          string    `firestore:"image_url"`
 }
 
 type SmileLevel struct {
-	Timestamp time.Time `firestore:"timestamp"`
-	Level     int       `firestore:"level"`
+	Timestamp         time.Time `firestore:"timestamp"`
+	SinceMeetingStart int64     `firestore:"since_meeting_start"`
+	Level             int       `firestore:"level"`
 }
 
 func SaveSmilePoint(sp SmilePoint) error {

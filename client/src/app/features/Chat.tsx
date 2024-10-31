@@ -225,7 +225,7 @@ const Chat: React.FC = () => {
                                     {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                         <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                     )}
-                                    <div>経過時間: {timer}</div>
+                                    <div>経過: {timer}</div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
 
@@ -252,7 +252,7 @@ const Chat: React.FC = () => {
                                 {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                     <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                 )}
-                                <div>経過時間: {timer}</div>
+                                <div>経過: {timer}</div>
                                 <div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>

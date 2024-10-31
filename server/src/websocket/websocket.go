@@ -89,8 +89,8 @@ func (s *Server) handleMeetingStatus(message Message) {
 		// 経過時間を毎秒送信
 		go func() {
 			for s.isMeetingActive {
-				elapsedTime := time.Since(s.meetingStartTime).Seconds()
-				s.timerBroadcast <- int64(elapsedTime)
+				elapsedTime := int64(time.Since(s.meetingStartTime).Seconds())
+				s.timerBroadcast <- elapsedTime
 				time.Sleep(1 * time.Second)
 			}
 		}()
@@ -237,11 +237,12 @@ func (s *Server) handleMessage(message Message) {
 
 func (s *Server) handleSmilePoint(message Message) {
 	firestoreSmilePointField := firebase.SmilePoint{
-		Timestamp:       message.Timestamp,
-		ClientId:        message.ClientId,
-		Nickname:        message.Nickname,
-		Point:           message.Point,
-		TotalSmilePoint: s.totalSmilePoint,
+		Timestamp:         message.Timestamp,
+		SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+		ClientId:          message.ClientId,
+		Nickname:          message.Nickname,
+		Point:             message.Point,
+		TotalSmilePoint:   s.totalSmilePoint,
 	}
 	if err := firebase.SaveSmilePoint(firestoreSmilePointField); err != nil {
 		log.Println("Error inserting smile_point into Firestore: ", err)
@@ -271,8 +272,9 @@ func (s *Server) handleSmilePoint(message Message) {
 	// レベルが変化していたらFirestoreにLevelを保存
 	if previousLevel != s.level {
 		firestoreSmileLevelField := firebase.SmileLevel{
-			Timestamp: message.Timestamp,
-			Level:     s.level,
+			Timestamp:         message.Timestamp,
+			SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+			Level:             s.level,
 		}
 		if err := firebase.SaveSmileLevel(firestoreSmileLevelField); err != nil {
 			log.Println("Error inserting smile_level into Firestore: ", err)
@@ -284,10 +286,11 @@ func (s *Server) handleSmilePoint(message Message) {
 		imageUrl, err := generateImageUrl()
 		if err == nil && imageUrl != "" {
 			firestoreSmileImageField := firebase.SmileImage{
-				Timestamp:       message.Timestamp,
-				TotalSmilePoint: s.totalSmilePoint,
-				Prompt:          "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
-				ImageUrl:        imageUrl,
+				Timestamp:         message.Timestamp,
+				SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+				TotalSmilePoint:   s.totalSmilePoint,
+				Prompt:            "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
+				ImageUrl:          imageUrl,
 			}
 			if err := firebase.SaveSmileImage(firestoreSmileImageField); err != nil {
 				log.Println("Error inserting smile_image into Firestore: ", err)
@@ -303,9 +306,10 @@ func (s *Server) handleSmilePoint(message Message) {
 
 func (s *Server) handleIdea(message Message) {
 	firestoreIdeaField := firebase.SmileIdea{
-		Timestamp: message.Timestamp,
-		ClientId:  message.ClientId,
-		Nickname:  message.Nickname,
+		Timestamp:         message.Timestamp,
+		SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+		ClientId:          message.ClientId,
+		Nickname:          message.Nickname,
 	}
 	if err := firebase.SaveSmileIdea(firestoreIdeaField); err != nil {
 		log.Println("Error inserting idea into Firestore: ", err)
