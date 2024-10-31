@@ -21,6 +21,7 @@ import ResizeButton from "./components/ResizeButton";
 import BorderEffect from "./components/BorderEffect";
 import Heart from "./components/Heart";
 import Food from "./components/Food";
+import TimerDisplay from "./components/TimerDisplay";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -42,6 +43,7 @@ const Chat: React.FC = () => {
     const [hearts, setHearts] = useState<{ id: string }[]>([]);
     const [foods, setFoods] = useState<{ id: string, foodsIndex: number }[]>([]);
     const [isMeetingActive, setIsMeetingActive] = useState(false); // Serverサイドの会議開始/終了の制御
+    const [timer, setTimer] = useState("00:00:00");
 
     const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -92,7 +94,7 @@ const Chat: React.FC = () => {
     // nicknameがセットされたのち、webSocketにデフォルトで接続
     useEffect(() => {
         if (nickname) {
-            startConnectWebSocket(socketRef, nickname, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus);
+            startConnectWebSocket(socketRef, nickname, setTimer, setMessages, setTotalSmilePoint, setTotalIdeas, setCurrentImage, setLevel, setClientsList, setStatus);
         }
     }, [nickname]);
 
@@ -224,6 +226,7 @@ const Chat: React.FC = () => {
                                     {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                         <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                     )}
+                                    <TimerDisplay timer={timer} />
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
 
@@ -250,6 +253,7 @@ const Chat: React.FC = () => {
                                 {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
                                     <OnOffButton onClick={handleOnOffButtonClick} currentStatus={status} />
                                 )}
+                                <TimerDisplay timer={timer} />
                                 <div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>

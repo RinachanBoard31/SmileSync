@@ -3,6 +3,7 @@ package websocket
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -28,6 +29,7 @@ type Message struct {
 	Type            string    `json:"type"`
 	Timestamp       time.Time `json:"timestamp"`
 	IsMeetingActive bool      `json:"isMeetingActive,omitempty"`
+	Timer           string    `json:"timer,omitempty"`
 	ClientId        string    `json:"client_id"`
 	Nickname        string    `json:"nickname"`
 	Text            string    `json:"text,omitempty"`
@@ -40,19 +42,21 @@ type Message struct {
 }
 
 type Server struct {
-	isMeetingActive bool                       // 会議の開始/終了を管理
-	clients         map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
-	broadcast       chan Message
-	smileBroadcast  chan int
-	ideaBroadcast   chan int
-	imageBroadcast  chan string
-	levelBroadcast  chan int
-	messages        []Message
-	totalSmilePoint int
-	totalIdeas      int
-	currentImageUrl string
-	level           int
-	mu              sync.Mutex
+	isMeetingActive  bool                       // 会議の開始/終了を管理
+	meetingStartTime time.Time                  // 会議の開始時刻を管理
+	clients          map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
+	broadcast        chan Message
+	timerBroadcast   chan int64 // 経過時間[s]をClientに送信
+	smileBroadcast   chan int
+	ideaBroadcast    chan int
+	imageBroadcast   chan string
+	levelBroadcast   chan int
+	messages         []Message
+	totalSmilePoint  int
+	totalIdeas       int
+	currentImageUrl  string
+	level            int
+	mu               sync.Mutex
 }
 
 func NewServer() *Server {
@@ -60,6 +64,7 @@ func NewServer() *Server {
 		isMeetingActive: false,
 		clients:         make(map[*websocket.Conn]string),
 		broadcast:       make(chan Message),
+		timerBroadcast:  make(chan int64),
 		smileBroadcast:  make(chan int),
 		ideaBroadcast:   make(chan int),
 		imageBroadcast:  make(chan string),
@@ -78,9 +83,20 @@ func (s *Server) handleMeetingStatus(message Message) {
 
 	if message.IsMeetingActive == true {
 		s.isMeetingActive = true
+		s.meetingStartTime = time.Now()
 		log.Println("Meeting started")
+
+		// 経過時間を毎秒送信
+		go func() {
+			for s.isMeetingActive {
+				elapsedTime := int64(time.Since(s.meetingStartTime).Seconds())
+				s.timerBroadcast <- elapsedTime
+				time.Sleep(1 * time.Second)
+			}
+		}()
 	} else {
 		s.isMeetingActive = false
+		s.meetingStartTime = time.Time{}
 		log.Println("Meeting ended")
 	}
 
@@ -221,11 +237,12 @@ func (s *Server) handleMessage(message Message) {
 
 func (s *Server) handleSmilePoint(message Message) {
 	firestoreSmilePointField := firebase.SmilePoint{
-		Timestamp:       message.Timestamp,
-		ClientId:        message.ClientId,
-		Nickname:        message.Nickname,
-		Point:           message.Point,
-		TotalSmilePoint: s.totalSmilePoint,
+		Timestamp:         message.Timestamp,
+		SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+		ClientId:          message.ClientId,
+		Nickname:          message.Nickname,
+		Point:             message.Point,
+		TotalSmilePoint:   s.totalSmilePoint,
 	}
 	if err := firebase.SaveSmilePoint(firestoreSmilePointField); err != nil {
 		log.Println("Error inserting smile_point into Firestore: ", err)
@@ -255,8 +272,9 @@ func (s *Server) handleSmilePoint(message Message) {
 	// レベルが変化していたらFirestoreにLevelを保存
 	if previousLevel != s.level {
 		firestoreSmileLevelField := firebase.SmileLevel{
-			Timestamp: message.Timestamp,
-			Level:     s.level,
+			Timestamp:         message.Timestamp,
+			SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+			Level:             s.level,
 		}
 		if err := firebase.SaveSmileLevel(firestoreSmileLevelField); err != nil {
 			log.Println("Error inserting smile_level into Firestore: ", err)
@@ -268,10 +286,11 @@ func (s *Server) handleSmilePoint(message Message) {
 		imageUrl, err := generateImageUrl()
 		if err == nil && imageUrl != "" {
 			firestoreSmileImageField := firebase.SmileImage{
-				Timestamp:       message.Timestamp,
-				TotalSmilePoint: s.totalSmilePoint,
-				Prompt:          "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
-				ImageUrl:        imageUrl,
+				Timestamp:         message.Timestamp,
+				SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+				TotalSmilePoint:   s.totalSmilePoint,
+				Prompt:            "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
+				ImageUrl:          imageUrl,
 			}
 			if err := firebase.SaveSmileImage(firestoreSmileImageField); err != nil {
 				log.Println("Error inserting smile_image into Firestore: ", err)
@@ -287,9 +306,10 @@ func (s *Server) handleSmilePoint(message Message) {
 
 func (s *Server) handleIdea(message Message) {
 	firestoreIdeaField := firebase.SmileIdea{
-		Timestamp: message.Timestamp,
-		ClientId:  message.ClientId,
-		Nickname:  message.Nickname,
+		Timestamp:         message.Timestamp,
+		SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
+		ClientId:          message.ClientId,
+		Nickname:          message.Nickname,
 	}
 	if err := firebase.SaveSmileIdea(firestoreIdeaField); err != nil {
 		log.Println("Error inserting idea into Firestore: ", err)
@@ -362,6 +382,18 @@ func (s *Server) HandleMessages() {
 			}
 			s.mu.Unlock()
 			log.Printf("Sent current level to all clients: %d\n", level)
+		// Timerの経過時間が送信された場合
+		case elapsedTime := <-s.timerBroadcast:
+			s.mu.Lock()
+			timerMsg := Message{
+				Type:  "timer",
+				Timer: fmt.Sprintf("%02d:%02d:%02d", int(elapsedTime)/3600, int(elapsedTime)%3600/60, int(elapsedTime)%60),
+			}
+			for client := range s.clients {
+				s.sendMessage(client, timerMsg)
+			}
+			s.mu.Unlock()
+			log.Printf("Sent elapsed time to all clients: %02d:%02d:%02d\n", int(elapsedTime)/3600, int(elapsedTime)%3600/60, int(elapsedTime)%60)
 		}
 	}
 }
