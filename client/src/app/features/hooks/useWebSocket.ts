@@ -4,6 +4,7 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 export const startConnectWebSocket = (
     socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
     nickname: string,
+    setTimer: Dispatch<SetStateAction<string>>,
     setMessages: Dispatch<SetStateAction<string[]>>,
     setTotalSmilePoint: Dispatch<SetStateAction<number>>,
     setTotalIdeas: Dispatch<SetStateAction<number>>,
@@ -51,6 +52,8 @@ export const startConnectWebSocket = (
                 setCurrentImage(data.imageUrl);
             } else if (data.type === "level") {
                 setLevel(data.level);
+            } else if (data.type === "timer") {
+                setTimer(data.timer);
             } else if (data.type == "meetingStatus") {
                 if (data.isMeetingActive === true) {
                     console.log("Meeting is now active");
