@@ -262,9 +262,9 @@ func (s *Server) handleSmilePoint(message Message) {
 		s.level = 5
 	case s.totalSmilePoint >= 1000:
 		s.level = 4
-	case s.totalSmilePoint >= 500: // 500 // 動的
+	case s.totalSmilePoint >= 500: // 500
 		s.level = 3
-	case s.totalSmilePoint >= 200: // 200 // ここを動的に
+	case s.totalSmilePoint >= 200: // 200
 		s.level = 2
 	}
 	s.mu.Unlock()
