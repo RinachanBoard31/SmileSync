@@ -312,13 +312,13 @@ func (s *Server) handleSmilePoint(message Message) {
 		s.levelBroadcast <- s.level
 
 		// 新しいImageUrlを生成し、Firestoreに保存
-		imageUrl, err := generateImageUrl()
+		prompt, imageUrl, err := generateImageUrl(s.level)
 		if err == nil && imageUrl != "" {
 			firestoreSmileImageField := firebase.SmileImage{
 				Timestamp:         message.Timestamp,
 				SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
 				TotalSmilePoint:   s.totalSmilePoint,
-				Prompt:            "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
+				Prompt:            prompt,
 				ImageUrl:          imageUrl,
 			}
 			if err := firebase.SaveSmileImage(firestoreSmileImageField); err != nil {
@@ -458,9 +458,43 @@ func (s *Server) sendMessage(conn *websocket.Conn, msg Message) {
 	}
 }
 
-func generateImageUrl() (imageUrl string, err error) {
+func generatePromptForLevel(level int) string {
+	if level < 1 {
+		level = 1
+	} else if level > 10 {
+		level = 10
+	}
+
+	basePrompt := "high resolution, a single golden retriever, no other animals, no duplicates, no extra figures, no humans, neutral plain background, focus on the dog, natural lighting"
+
+	descriptions := []string{
+		"A small, tired puppy, looking peaceful but weak, low energy,",
+		"A young puppy, slightly playful, starting to gain energy, healthy,",
+		"A growing puppy, happy and playful, starting to look confident,",
+		"A medium-sized dog, cheerful and active, full of vitality,",
+		"A young adult dog, energetic and happy, strong and confident,",
+		"A well-grown dog, full of energy, playful and intelligent,",
+		"A mature dog, very active, visibly healthy and muscular,",
+		"A highly energetic dog, at peak vitality, very happy and alert,",
+		"An adult golden retriever, vibrant and radiant, full of life,",
+		"A majestic adult dog, the epitome of health and happiness,",
+	}
+
+	growthEnergyPrompt := fmt.Sprintf(
+		"Growth level is %d out of 10, Energy level is %d out of 10.",
+		level, level,
+	)
+
+	prompt := fmt.Sprintf("%s %s %s", basePrompt, descriptions[level-1], growthEnergyPrompt)
+
+	return prompt
+}
+
+func generateImageUrl(level int) (prompt string, imageUrl string, err error) {
+	generatedPrompt := generatePromptForLevel(level)
+
 	reqBody := map[string]interface{}{
-		"prompt":          "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
+		"prompt":          generatedPrompt,
 		"model":           "dall-e-3",
 		"n":               1,
 		"size":            "1024x1024",
@@ -471,12 +505,12 @@ func generateImageUrl() (imageUrl string, err error) {
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	req, err := http.NewRequest("POST", os.Getenv("DALLE_API_ENDPOINT"), bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+os.Getenv("DALLE_API_KEY"))
 	req.Header.Set("Content-Type", "application/json")
@@ -484,7 +518,7 @@ func generateImageUrl() (imageUrl string, err error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer resp.Body.Close()
 
@@ -492,7 +526,7 @@ func generateImageUrl() (imageUrl string, err error) {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		bodyString := string(bodyBytes)
 		log.Printf("Failed to generate image: %s", bodyString)
-		return "", err
+		return "", "", err
 	}
 
 	var result struct {
@@ -501,11 +535,11 @@ func generateImageUrl() (imageUrl string, err error) {
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if len(result.Data) > 0 {
-		return result.Data[0].Url, nil
+		return generatedPrompt, result.Data[0].Url, nil
 	}
-	return "", nil
+	return generatedPrompt, "", nil
 }
