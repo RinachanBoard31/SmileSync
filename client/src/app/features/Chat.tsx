@@ -22,6 +22,7 @@ import BorderEffect from "./components/BorderEffect";
 import Heart from "./components/Heart";
 import Food from "./components/Food";
 import TimerDisplay from "./components/TimerDisplay";
+import ConnectedClientsDisplay from "./components/ConnectedClientsDisplay";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -257,10 +258,7 @@ const Chat: React.FC = () => {
                                 <div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
-                                <h2>Connected Clients:</h2>
-                                {clientsList.map((client, index) => (
-                                    <div key={index}>{client}</div>
-                                ))}
+                                <ConnectedClientsDisplay clientsList={clientsList} />
                             </div>
 
                             {/* 右上 */}
