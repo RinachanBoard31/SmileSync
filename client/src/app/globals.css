@@ -111,3 +111,51 @@ h2 {
         opacity: 0;
     }
 }
+
+.level-up-background {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: linear-gradient(
+      to right,
+      rgba(159, 117, 255, 1),
+      rgba(97, 178, 255, 1),
+      rgba(252, 160, 255, 1),
+      rgba(255, 204, 102, 1)
+  );
+  background-size: 400% 400%;
+  animation: levelUpGradientMove 3s ease infinite;
+}
+
+@keyframes levelUpGradientMove {
+  0% {
+      background-position: 0% 50%;
+  }
+  50% {
+      background-position: 100% 50%;
+  }
+  100% {
+      background-position: 0% 50%;
+  }
+}
+
+.level-up-emoji {
+  position: absolute;
+  font-size: 4rem;
+  animation: levelUpFloat 3s ease-in-out forwards;
+}
+
+@keyframes levelUpFloat {
+  0% {
+      opacity: 0;
+      transform: translateY(100px) scale(0.8);
+  }
+  50% {
+      opacity: 1;
+      transform: translateY(-50px) scale(1.2);
+  }
+  100% {
+      opacity: 0;
+      transform: translateY(-200px) scale(1);
+  }
+}
