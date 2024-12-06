@@ -76,7 +76,7 @@ func NewServer() *Server {
 		totalIdeas:          0,
 		currentImageUrl:     "",
 		level:               1,
-		levelThresholds:     make([]int, 5),
+		levelThresholds:     make([]int, 9), // レベルが10段階なので、9つの閾値を設定
 		isLevelThresholdSet: false,
 	}
 }
@@ -96,11 +96,9 @@ func (s *Server) handleMeetingStatus(message Message) {
 				// 会議開始後2分後に閾値を設定
 				if !s.isLevelThresholdSet && int64(time.Since(s.meetingStartTime).Seconds()) >= 10 {
 					s.mu.Lock()
-					s.levelThresholds[0] = s.totalSmilePoint     // level1->2の閾値
-					s.levelThresholds[1] = s.totalSmilePoint * 2 // level2->3の閾値
-					s.levelThresholds[2] = s.totalSmilePoint * 4
-					s.levelThresholds[3] = s.totalSmilePoint * 8
-					s.levelThresholds[4] = s.totalSmilePoint * 16
+					for i := 0; i < 9; i++ {
+						s.levelThresholds[i] = s.totalSmilePoint * (1 << i) // 1, 2, 4, 8...倍
+					}
 					s.isLevelThresholdSet = true
 					log.Printf("Level thresholds: %v\n", s.levelThresholds)
 					s.mu.Unlock()
@@ -276,6 +274,14 @@ func (s *Server) handleSmilePoint(message Message) {
 	previousLevel := s.level
 	if s.isLevelThresholdSet { // 閾値が設定されている場合に動的計算
 		switch {
+		case s.totalSmilePoint >= s.levelThresholds[8]:
+			s.level = 10
+		case s.totalSmilePoint >= s.levelThresholds[7]:
+			s.level = 9
+		case s.totalSmilePoint >= s.levelThresholds[6]:
+			s.level = 8
+		case s.totalSmilePoint >= s.levelThresholds[5]:
+			s.level = 7
 		case s.totalSmilePoint >= s.levelThresholds[4]:
 			s.level = 6
 		case s.totalSmilePoint >= s.levelThresholds[3]:
