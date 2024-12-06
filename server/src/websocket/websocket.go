@@ -94,7 +94,7 @@ func (s *Server) handleMeetingStatus(message Message) {
 		go func() {
 			for s.isMeetingActive {
 				// 会議開始後2分後に閾値を設定
-				if !s.isLevelThresholdSet && int64(time.Since(s.meetingStartTime).Seconds()) >= 10 {
+				if !s.isLevelThresholdSet && int64(time.Since(s.meetingStartTime).Seconds()) >= 120 {
 					s.mu.Lock()
 					for i := 0; i < 9; i++ {
 						s.levelThresholds[i] = s.totalSmilePoint * (1 << i) // 1, 2, 4, 8...倍
