@@ -42,38 +42,42 @@ type Message struct {
 }
 
 type Server struct {
-	isMeetingActive  bool                       // 会議の開始/終了を管理
-	meetingStartTime time.Time                  // 会議の開始時刻を管理
-	clients          map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
-	broadcast        chan Message
-	timerBroadcast   chan int64 // 経過時間[s]をClientに送信
-	smileBroadcast   chan int
-	ideaBroadcast    chan int
-	imageBroadcast   chan string
-	levelBroadcast   chan int
-	messages         []Message
-	totalSmilePoint  int
-	totalIdeas       int
-	currentImageUrl  string
-	level            int
-	mu               sync.Mutex
+	isMeetingActive     bool                       // 会議の開始/終了を管理
+	meetingStartTime    time.Time                  // 会議の開始時刻を管理
+	clients             map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
+	broadcast           chan Message
+	timerBroadcast      chan int64 // 経過時間[s]をClientに送信
+	smileBroadcast      chan int
+	ideaBroadcast       chan int
+	imageBroadcast      chan string
+	levelBroadcast      chan int
+	messages            []Message
+	totalSmilePoint     int
+	totalIdeas          int
+	currentImageUrl     string
+	level               int
+	levelThresholds     []int // レベルの閾値
+	isLevelThresholdSet bool
+	mu                  sync.Mutex
 }
 
 func NewServer() *Server {
 	return &Server{
-		isMeetingActive: false,
-		clients:         make(map[*websocket.Conn]string),
-		broadcast:       make(chan Message),
-		timerBroadcast:  make(chan int64),
-		smileBroadcast:  make(chan int),
-		ideaBroadcast:   make(chan int),
-		imageBroadcast:  make(chan string),
-		levelBroadcast:  make(chan int),
-		messages:        make([]Message, 0),
-		totalSmilePoint: 0,
-		totalIdeas:      0,
-		currentImageUrl: "",
-		level:           1,
+		isMeetingActive:     false,
+		clients:             make(map[*websocket.Conn]string),
+		broadcast:           make(chan Message),
+		timerBroadcast:      make(chan int64),
+		smileBroadcast:      make(chan int),
+		ideaBroadcast:       make(chan int),
+		imageBroadcast:      make(chan string),
+		levelBroadcast:      make(chan int),
+		messages:            make([]Message, 0),
+		totalSmilePoint:     0,
+		totalIdeas:          0,
+		currentImageUrl:     "",
+		level:               1,
+		levelThresholds:     make([]int, 5),
+		isLevelThresholdSet: false,
 	}
 }
 
@@ -89,6 +93,19 @@ func (s *Server) handleMeetingStatus(message Message) {
 		// 経過時間を毎秒送信
 		go func() {
 			for s.isMeetingActive {
+				// 会議開始後2分後に閾値を設定
+				if !s.isLevelThresholdSet && int64(time.Since(s.meetingStartTime).Seconds()) >= 10 {
+					s.mu.Lock()
+					s.levelThresholds[0] = s.totalSmilePoint     // level1->2の閾値
+					s.levelThresholds[1] = s.totalSmilePoint * 2 // level2->3の閾値
+					s.levelThresholds[2] = s.totalSmilePoint * 4
+					s.levelThresholds[3] = s.totalSmilePoint * 8
+					s.levelThresholds[4] = s.totalSmilePoint * 16
+					s.isLevelThresholdSet = true
+					log.Printf("Level thresholds: %v\n", s.levelThresholds)
+					s.mu.Unlock()
+				}
+				// カウントアップ
 				elapsedTime := int64(time.Since(s.meetingStartTime).Seconds())
 				s.timerBroadcast <- elapsedTime
 				time.Sleep(1 * time.Second)
@@ -257,15 +274,21 @@ func (s *Server) handleSmilePoint(message Message) {
 	// レベルの処理
 	s.mu.Lock()
 	previousLevel := s.level
-	switch {
-	case s.totalSmilePoint >= 2000:
-		s.level = 5
-	case s.totalSmilePoint >= 1000:
-		s.level = 4
-	case s.totalSmilePoint >= 500: // 500
-		s.level = 3
-	case s.totalSmilePoint >= 200: // 200
-		s.level = 2
+	if s.isLevelThresholdSet { // 閾値が設定されている場合に動的計算
+		switch {
+		case s.totalSmilePoint >= s.levelThresholds[4]:
+			s.level = 6
+		case s.totalSmilePoint >= s.levelThresholds[3]:
+			s.level = 5
+		case s.totalSmilePoint >= s.levelThresholds[2]:
+			s.level = 4
+		case s.totalSmilePoint >= s.levelThresholds[1]:
+			s.level = 3
+		case s.totalSmilePoint >= s.levelThresholds[0]:
+			s.level = 2
+		}
+	} else {
+		s.level = 1
 	}
 	s.mu.Unlock()
 
