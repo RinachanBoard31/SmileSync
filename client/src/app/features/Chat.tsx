@@ -22,6 +22,8 @@ import BorderEffect from "./components/BorderEffect";
 import Heart from "./components/Heart";
 import Food from "./components/Food";
 import TimerDisplay from "./components/TimerDisplay";
+import ConnectedClientsDisplay from "./components/ConnectedClientsDisplay";
+import LevelUpCelebration from "./components/LevelUpCelebration";
 
 const Chat: React.FC = () => {
     const router = useRouter();
@@ -44,6 +46,7 @@ const Chat: React.FC = () => {
     const [foods, setFoods] = useState<{ id: string, foodsIndex: number }[]>([]);
     const [isMeetingActive, setIsMeetingActive] = useState(false); // Serverサイドの会議開始/終了の制御
     const [timer, setTimer] = useState("00:00:00");
+    const [isCelebrating, setIsCelebrating] = useState(false);
 
     const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -156,6 +159,7 @@ const Chat: React.FC = () => {
     useEffect(() => {
         if (level) {
             console.log("Level up to : ", level);
+            setIsCelebrating(true);
         }
     }, [level]);
 
@@ -213,6 +217,11 @@ const Chat: React.FC = () => {
                         <Food key={food.id} id={food.id} foodsIndex={food.foodsIndex} removeFood={removeFood} />
                     ))}
 
+                    {/* レベルアップ祝い 修理中*/}
+                    {/* {isCelebrating && (
+                        <LevelUpCelebration onEnd={() => setIsCelebrating(false)} />
+                    )} */}
+
                     {/* 最小表示モード */}
                     {isSmallScreen ? (
                         <div className="h-screen w-screen flex items-center justify-center overflow-hidden box-border">
@@ -257,10 +266,7 @@ const Chat: React.FC = () => {
                                 <div>
                                     <IdeasButton onClick={() => sendIdea(socketRef, clientId, nickname, setStatus)} totalIdeas={totalIdeas} disabled={status !== 1} />
                                 </div>
-                                <h2>Connected Clients:</h2>
-                                {clientsList.map((client, index) => (
-                                    <div key={index}>{client}</div>
-                                ))}
+                                <ConnectedClientsDisplay clientsList={clientsList} />
                             </div>
 
                             {/* 右上 */}

@@ -42,38 +42,42 @@ type Message struct {
 }
 
 type Server struct {
-	isMeetingActive  bool                       // 会議の開始/終了を管理
-	meetingStartTime time.Time                  // 会議の開始時刻を管理
-	clients          map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
-	broadcast        chan Message
-	timerBroadcast   chan int64 // 経過時間[s]をClientに送信
-	smileBroadcast   chan int
-	ideaBroadcast    chan int
-	imageBroadcast   chan string
-	levelBroadcast   chan int
-	messages         []Message
-	totalSmilePoint  int
-	totalIdeas       int
-	currentImageUrl  string
-	level            int
-	mu               sync.Mutex
+	isMeetingActive     bool                       // 会議の開始/終了を管理
+	meetingStartTime    time.Time                  // 会議の開始時刻を管理
+	clients             map[*websocket.Conn]string // Nicknameで接続中のclientsを管理
+	broadcast           chan Message
+	timerBroadcast      chan int64 // 経過時間[s]をClientに送信
+	smileBroadcast      chan int
+	ideaBroadcast       chan int
+	imageBroadcast      chan string
+	levelBroadcast      chan int
+	messages            []Message
+	totalSmilePoint     int
+	totalIdeas          int
+	currentImageUrl     string
+	level               int
+	levelThresholds     []int // レベルの閾値
+	isLevelThresholdSet bool
+	mu                  sync.Mutex
 }
 
 func NewServer() *Server {
 	return &Server{
-		isMeetingActive: false,
-		clients:         make(map[*websocket.Conn]string),
-		broadcast:       make(chan Message),
-		timerBroadcast:  make(chan int64),
-		smileBroadcast:  make(chan int),
-		ideaBroadcast:   make(chan int),
-		imageBroadcast:  make(chan string),
-		levelBroadcast:  make(chan int),
-		messages:        make([]Message, 0),
-		totalSmilePoint: 0,
-		totalIdeas:      0,
-		currentImageUrl: "",
-		level:           1,
+		isMeetingActive:     false,
+		clients:             make(map[*websocket.Conn]string),
+		broadcast:           make(chan Message),
+		timerBroadcast:      make(chan int64),
+		smileBroadcast:      make(chan int),
+		ideaBroadcast:       make(chan int),
+		imageBroadcast:      make(chan string),
+		levelBroadcast:      make(chan int),
+		messages:            make([]Message, 0),
+		totalSmilePoint:     0,
+		totalIdeas:          0,
+		currentImageUrl:     "",
+		level:               1,
+		levelThresholds:     make([]int, 9), // レベルが10段階なので、9つの閾値を設定
+		isLevelThresholdSet: false,
 	}
 }
 
@@ -89,6 +93,17 @@ func (s *Server) handleMeetingStatus(message Message) {
 		// 経過時間を毎秒送信
 		go func() {
 			for s.isMeetingActive {
+				// 会議開始後2分後に閾値を設定
+				if !s.isLevelThresholdSet && int64(time.Since(s.meetingStartTime).Seconds()) >= 120 {
+					s.mu.Lock()
+					for i := 0; i < 9; i++ {
+						s.levelThresholds[i] = s.totalSmilePoint * (1 << i) // 1, 2, 4, 8...倍
+					}
+					s.isLevelThresholdSet = true
+					log.Printf("Level thresholds: %v\n", s.levelThresholds)
+					s.mu.Unlock()
+				}
+				// カウントアップ
 				elapsedTime := int64(time.Since(s.meetingStartTime).Seconds())
 				s.timerBroadcast <- elapsedTime
 				time.Sleep(1 * time.Second)
@@ -257,15 +272,29 @@ func (s *Server) handleSmilePoint(message Message) {
 	// レベルの処理
 	s.mu.Lock()
 	previousLevel := s.level
-	switch {
-	case s.totalSmilePoint >= 2000:
-		s.level = 5
-	case s.totalSmilePoint >= 1000:
-		s.level = 4
-	case s.totalSmilePoint >= 100: // 500
-		s.level = 3
-	case s.totalSmilePoint >= 30: // 200
-		s.level = 2
+	if s.isLevelThresholdSet { // 閾値が設定されている場合に動的計算
+		switch {
+		case s.totalSmilePoint >= s.levelThresholds[8]:
+			s.level = 10
+		case s.totalSmilePoint >= s.levelThresholds[7]:
+			s.level = 9
+		case s.totalSmilePoint >= s.levelThresholds[6]:
+			s.level = 8
+		case s.totalSmilePoint >= s.levelThresholds[5]:
+			s.level = 7
+		case s.totalSmilePoint >= s.levelThresholds[4]:
+			s.level = 6
+		case s.totalSmilePoint >= s.levelThresholds[3]:
+			s.level = 5
+		case s.totalSmilePoint >= s.levelThresholds[2]:
+			s.level = 4
+		case s.totalSmilePoint >= s.levelThresholds[1]:
+			s.level = 3
+		case s.totalSmilePoint >= s.levelThresholds[0]:
+			s.level = 2
+		}
+	} else {
+		s.level = 1
 	}
 	s.mu.Unlock()
 
@@ -283,13 +312,13 @@ func (s *Server) handleSmilePoint(message Message) {
 		s.levelBroadcast <- s.level
 
 		// 新しいImageUrlを生成し、Firestoreに保存
-		imageUrl, err := generateImageUrl()
+		prompt, imageUrl, err := generateImageUrl(s.level)
 		if err == nil && imageUrl != "" {
 			firestoreSmileImageField := firebase.SmileImage{
 				Timestamp:         message.Timestamp,
 				SinceMeetingStart: int64(time.Since(s.meetingStartTime).Seconds()),
 				TotalSmilePoint:   s.totalSmilePoint,
-				Prompt:            "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
+				Prompt:            prompt,
 				ImageUrl:          imageUrl,
 			}
 			if err := firebase.SaveSmileImage(firestoreSmileImageField); err != nil {
@@ -429,9 +458,43 @@ func (s *Server) sendMessage(conn *websocket.Conn, msg Message) {
 	}
 }
 
-func generateImageUrl() (imageUrl string, err error) {
+func generatePromptForLevel(level int) string {
+	if level < 1 {
+		level = 1
+	} else if level > 10 {
+		level = 10
+	}
+
+	basePrompt := "high resolution, a single golden retriever, no other animals, no duplicates, no extra figures, no humans, neutral plain background, focus on the dog, natural lighting"
+
+	descriptions := []string{
+		"A small, tired puppy, looking peaceful but weak, low energy,",
+		"A young puppy, slightly playful, starting to gain energy, healthy,",
+		"A growing puppy, happy and playful, starting to look confident,",
+		"A medium-sized dog, cheerful and active, full of vitality,",
+		"A young adult dog, energetic and happy, strong and confident,",
+		"A well-grown dog, full of energy, playful and intelligent,",
+		"A mature dog, very active, visibly healthy and muscular,",
+		"A highly energetic dog, at peak vitality, very happy and alert,",
+		"An adult golden retriever, vibrant and radiant, full of life,",
+		"A majestic adult dog, the epitome of health and happiness,",
+	}
+
+	growthEnergyPrompt := fmt.Sprintf(
+		"Growth level is %d out of 10, Energy level is %d out of 10.",
+		level, level,
+	)
+
+	prompt := fmt.Sprintf("%s %s %s", basePrompt, descriptions[level-1], growthEnergyPrompt)
+
+	return prompt
+}
+
+func generateImageUrl(level int) (prompt string, imageUrl string, err error) {
+	generatedPrompt := generatePromptForLevel(level)
+
 	reqBody := map[string]interface{}{
-		"prompt":          "A dog, high resolution, golden retriever, peaceful, smile, not sick, happy",
+		"prompt":          generatedPrompt,
 		"model":           "dall-e-3",
 		"n":               1,
 		"size":            "1024x1024",
@@ -442,12 +505,12 @@ func generateImageUrl() (imageUrl string, err error) {
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	req, err := http.NewRequest("POST", os.Getenv("DALLE_API_ENDPOINT"), bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+os.Getenv("DALLE_API_KEY"))
 	req.Header.Set("Content-Type", "application/json")
@@ -455,7 +518,7 @@ func generateImageUrl() (imageUrl string, err error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer resp.Body.Close()
 
@@ -463,7 +526,7 @@ func generateImageUrl() (imageUrl string, err error) {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		bodyString := string(bodyBytes)
 		log.Printf("Failed to generate image: %s", bodyString)
-		return "", err
+		return "", "", err
 	}
 
 	var result struct {
@@ -472,11 +535,11 @@ func generateImageUrl() (imageUrl string, err error) {
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if len(result.Data) > 0 {
-		return result.Data[0].Url, nil
+		return generatedPrompt, result.Data[0].Url, nil
 	}
-	return "", nil
+	return generatedPrompt, "", nil
 }
