@@ -32,7 +32,7 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({ onEnd }) => {
           {celebrationEmojis.map((emoji, index) => (
             <span 
               key={index} 
-              className="level-up-emoji" 
+              className="level-up-emoji" // なんか虹色で戻らない
               style={{ 
                 left: `${Math.random() * 100}%`, 
                 top: `${Math.random() * 100}%`,
