@@ -302,22 +302,15 @@ const Chat: React.FC = () => {
               {/* 左上 */}
               <div className="p-4 border rounded-lg space-y-4">
                 <h1>SmileSync</h1>
-                <ConnectionStatusButton status={status} />
-                {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
-                  <OnOffButton
-                    onClick={handleOnOffButtonClick}
-                    currentStatus={status}
-                  />
-                )}
-                <TimerDisplay timer={timer} />
-                <div>
-                  <IdeasButton
-                    onClick={() =>
-                      sendIdea(socketRef, clientId, nickname, setStatus)
-                    }
-                    totalIdeas={totalIdeas}
-                    disabled={status !== 1}
-                  />
+                <div className="flex items-center gap-2">
+                  <ConnectionStatusButton status={status} />
+                  <TimerDisplay timer={timer} />
+                  {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
+                    <OnOffButton
+                      onClick={handleOnOffButtonClick}
+                      currentStatus={status}
+                    />
+                  )}
                 </div>
                 <ConnectedClientsDisplay clientsList={clientsList} />
               </div>
@@ -330,7 +323,16 @@ const Chat: React.FC = () => {
               {/* 左下 */}
               <div className="p-4 border rounded-lg">
                 <div>
-                  <SmileStatus smileProb={smileProb} />
+                  <div className="flex items-center gap-2">
+                    <SmileStatus smileProb={smileProb} />
+                    <IdeasButton
+                      onClick={() =>
+                        sendIdea(socketRef, clientId, nickname, setStatus)
+                      }
+                      totalIdeas={totalIdeas}
+                      disabled={status !== 1}
+                    />
+                  </div>
                   <UserExpressions userExpressions={userExpressions} />
                 </div>
                 <br />

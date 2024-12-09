@@ -72,7 +72,7 @@ interface ConnectedClientsDisplayProps {
 const getEmojiForName = (name: string): string => {
   const hash = Array.from(name).reduce(
     (acc, char) => acc + char.charCodeAt(0),
-    0,
+    0
   );
   return emojiList[hash % emojiList.length];
 };
@@ -80,6 +80,8 @@ const getEmojiForName = (name: string): string => {
 const ConnectedClientsDisplay: React.FC<ConnectedClientsDisplayProps> = ({
   clientsList,
 }) => {
+  const sortedClientsList = [...clientsList].sort((a, b) => a.localeCompare(b));
+
   return (
     <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-600">
       <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">
@@ -92,7 +94,7 @@ const ConnectedClientsDisplay: React.FC<ConnectedClientsDisplayProps> = ({
           </p>
         ) : (
           <ul className="space-y-1">
-            {clientsList.map((client, index) => (
+            {sortedClientsList.map((client, index) => (
               <li
                 key={index}
                 className="flex items-center px-2 py-1 bg-gray-200 rounded dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-bold"
