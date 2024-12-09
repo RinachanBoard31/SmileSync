@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import Chat from '../features/Chat';
+import Chat from "../features/Chat";
 
 const ChatPage = () => {
-    return <Chat />;
+  return <Chat />;
 };
 
 export default ChatPage;

@@ -3,113 +3,114 @@
 @tailwind utilities;
 
 :root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
-        --foreground-rgb: 255, 255, 255;
-        --background-start-rgb: 0, 0, 0;
-        --background-end-rgb: 0, 0, 0;
-    }
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
 }
 
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
-html, body {
-    color: white;
-    background: #222;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
+html,
+body {
+  color: white;
+  background: #222;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 @layer utilities {
-    .text-balance {
-        text-wrap: balance;
-    }
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
 h1 {
-    font-size: 4rem;
-    font-weight: bold;
-    text-align: left;
-    background: linear-gradient(to right, #9f75ff, #61b2ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: gradientMove 3s linear infinite;
-    background-size: 200% 200%;
+  font-size: 4rem;
+  font-weight: bold;
+  text-align: left;
+  background: linear-gradient(to right, #9f75ff, #61b2ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientMove 3s linear infinite;
+  background-size: 200% 200%;
 }
 
 h2 {
-    font-size: 1rem;
-    font-weight: bold;
-    text-align: left;
-    background: linear-gradient(to right, #9f75ff, #ffffff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: gradientMove 3s linear infinite;
-    background-size: 200% 200%;
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: left;
+  background: linear-gradient(to right, #9f75ff, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientMove 3s linear infinite;
+  background-size: 200% 200%;
 }
 
 @keyframes gradientMove {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .heart {
-    position: fixed;
-    bottom: -100px;
-    font-size: 5rem;
-    z-index: 9999;
-    animation: floating 5s ease-in-out forwards;
+  position: fixed;
+  bottom: -100px;
+  font-size: 5rem;
+  z-index: 9999;
+  animation: floating 5s ease-in-out forwards;
 }
 
 @keyframes floating {
-    0% {
-        transform: translateY(0px) rotate(-10deg);
-    }
-    50% {
-        transform: translateY(-300px) rotate(10deg);
-    }
-    100% {
-        transform: translateY(-600px) rotate(-10deg);
-        opacity: 0;
-    }
+  0% {
+    transform: translateY(0px) rotate(-10deg);
+  }
+  50% {
+    transform: translateY(-300px) rotate(10deg);
+  }
+  100% {
+    transform: translateY(-600px) rotate(-10deg);
+    opacity: 0;
+  }
 }
 
 .food {
-    position: fixed;
-    bottom: -100px;
-    font-size: 5rem;
-    z-index: 9999;
-    animation: foodFloat 5s ease-in-out forwards;
+  position: fixed;
+  bottom: -100px;
+  font-size: 5rem;
+  z-index: 9999;
+  animation: foodFloat 5s ease-in-out forwards;
 }
 
 @keyframes foodFloat {
-    0% {
-        transform: translateY(0) rotate(0deg);
-    }
-    50% {
-        transform: translateY(-300px) rotate(10deg);
-    }
-    100% {
-        transform: translateY(-600px) rotate(-10deg);
-        opacity: 0;
-    }
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-300px) rotate(10deg);
+  }
+  100% {
+    transform: translateY(-600px) rotate(-10deg);
+    opacity: 0;
+  }
 }
 
 .level-up-background {
@@ -117,11 +118,11 @@ h2 {
   inset: 0;
   z-index: 50;
   background: linear-gradient(
-      to right,
-      rgba(159, 117, 255, 1),
-      rgba(97, 178, 255, 1),
-      rgba(252, 160, 255, 1),
-      rgba(255, 204, 102, 1)
+    to right,
+    rgba(159, 117, 255, 1),
+    rgba(97, 178, 255, 1),
+    rgba(252, 160, 255, 1),
+    rgba(255, 204, 102, 1)
   );
   background-size: 400% 400%;
   animation: levelUpGradientMove 3s ease infinite;
@@ -129,13 +130,13 @@ h2 {
 
 @keyframes levelUpGradientMove {
   0% {
-      background-position: 0% 50%;
+    background-position: 0% 50%;
   }
   50% {
-      background-position: 100% 50%;
+    background-position: 100% 50%;
   }
   100% {
-      background-position: 0% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -147,15 +148,15 @@ h2 {
 
 @keyframes levelUpFloat {
   0% {
-      opacity: 0;
-      transform: translateY(100px) scale(0.8);
+    opacity: 0;
+    transform: translateY(100px) scale(0.8);
   }
   50% {
-      opacity: 1;
-      transform: translateY(-50px) scale(1.2);
+    opacity: 1;
+    transform: translateY(-50px) scale(1.2);
   }
   100% {
-      opacity: 0;
-      transform: translateY(-200px) scale(1);
+    opacity: 0;
+    transform: translateY(-200px) scale(1);
   }
 }

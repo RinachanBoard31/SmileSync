@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import Login from '../features/Login';
+import Login from "../features/Login";
 
 const LoginPage = () => {
-    return <Login />;
+  return <Login />;
 };
 
 export default LoginPage;
