@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from "react";
 
 // レベルアップ時の絵文字リスト
-const celebrationEmojis = ["🎉", "✨", "🎊", "🔥", "🌟", "💥", "🎵", "🎈", "💫", "⭐"];
+const celebrationEmojis = [
+  "🎉",
+  "✨",
+  "🎊",
+  "🔥",
+  "🌟",
+  "💥",
+  "🎵",
+  "🎈",
+  "💫",
+  "⭐",
+];
 
 interface LevelUpCelebrationProps {
   onEnd: () => void; // アニメーション終了時のコールバック
@@ -30,11 +41,11 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({ onEnd }) => {
         </h1>
         <div className="text-4xl flex justify-center gap-4 animate-bounce">
           {celebrationEmojis.map((emoji, index) => (
-            <span 
-              key={index} 
-              className="level-up-emoji" 
-              style={{ 
-                left: `${Math.random() * 100}%`, 
+            <span
+              key={index}
+              className="level-up-emoji" // なんか虹色で戻らない
+              style={{
+                left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
               }}
             >
