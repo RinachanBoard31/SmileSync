@@ -58,4 +58,4 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({ onEnd }) => {
   );
 };
 
-export default LevelUpCelebration;
+export default LevelUpCelebration; // 修正
