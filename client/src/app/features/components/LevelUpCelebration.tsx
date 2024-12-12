@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 
-// レベルアップ時の絵文字リスト
 const celebrationEmojis = [
   "🎉",
   "✨",
@@ -15,18 +14,21 @@ const celebrationEmojis = [
 ];
 
 interface LevelUpCelebrationProps {
+  newImage: string; // レベルアップで表示する新しい画像
   onEnd: () => void; // アニメーション終了時のコールバック
 }
 
-const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({ onEnd }) => {
+const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({
+  newImage,
+  onEnd,
+}) => {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    // アニメーションを3秒後に終了
     const timer = setTimeout(() => {
       setShow(false);
       onEnd();
-    }, 3000);
+    }, 5000); // 5秒で終了
 
     return () => clearTimeout(timer);
   }, [onEnd]);
@@ -35,27 +37,38 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({ onEnd }) => {
 
   return (
     <div className="level-up-background">
-      <div className="text-center">
-        <h1 className="text-6xl font-extrabold text-white drop-shadow-lg mb-4 animate-pulse">
-          Level up!
-        </h1>
-        <div className="text-4xl flex justify-center gap-4 animate-bounce">
-          {celebrationEmojis.map((emoji, index) => (
-            <span
-              key={index}
-              className="level-up-emoji" // なんか虹色で戻らない
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-            >
-              {emoji}
-            </span>
-          ))}
-        </div>
+      {/* Level Up! の文字 */}
+      <h1 className="text-6xl font-bold animate-pulse mb-8 text-center text-white">
+        Level Up!
+      </h1>
+
+      {/* 新しい画像を中央に大きく表示 */}
+      <div className="relative w-2/3 max-w-screen-md mx-auto">
+        <img
+          src={newImage}
+          alt="New Level Image"
+          className="w-full h-auto object-cover rounded-lg shadow-lg animate-popIn"
+        />
+      </div>
+
+      {/* キラキラエフェクト */}
+      <div className="absolute inset-0 pointer-events-none">
+        {Array.from({ length: 20 }).map((_, index) => (
+          <span
+            key={index}
+            className="absolute text-6xl animate-slowEmojiFloat"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          >
+            {celebrationEmojis[index % celebrationEmojis.length]}
+          </span>
+        ))}
       </div>
     </div>
   );
 };
 
-export default LevelUpCelebration; // 修正
+export default LevelUpCelebration;

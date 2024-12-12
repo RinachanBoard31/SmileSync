@@ -141,6 +141,7 @@ const Chat: React.FC = () => {
 
   // totalSmilePointが変化したら発火してハート生成
   useEffect(() => {
+    setIsCelebrating(true); //すぐ消す
     const handleAddHeart = () => {
       const newHeart = { id: uuidv4() };
       setHearts((prevHearts) => [...prevHearts, newHeart]);
@@ -185,7 +186,7 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (level) {
       console.log("Level up to : ", level);
-      setIsCelebrating(true);
+      // setIsCelebrating(true);
     }
   }, [level]);
 
@@ -248,10 +249,13 @@ const Chat: React.FC = () => {
             />
           ))}
 
-          {/* レベルアップ祝い 修理中*/}
-          {/* {isCelebrating && (
-                        <LevelUpCelebration onEnd={() => setIsCelebrating(false)} />
-                    )} */}
+          {/* レベルアップ祝い */}
+          {isCelebrating && (
+            <LevelUpCelebration
+              newImage={currentImage} // 新しい画像を渡す
+              onEnd={() => setIsCelebrating(false)} // 5秒後に終了
+            />
+          )}
 
           {/* 最小表示モード */}
           {isSmallScreen ? (
