@@ -77,4 +77,4 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({
   );
 };
 
-export default LevelUpCelebration;
+export default LevelUpCelebration; // まだ何度もレンダリングされちゃう
