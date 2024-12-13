@@ -121,11 +121,11 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none; /* 他の要素を押せるようにする */
 }
 
 .level-up-content {
   text-align: center;
+  pointer-events: auto; /* 背景のクリックを透過 */
 }
 
 .level-up-emojis {
@@ -138,7 +138,7 @@ h2 {
 
 .emoji-burst {
   font-size: 3rem;
-  animation: emojiFloat 2.5s ease-in-out infinite;
+  animation: emojiFloat 4s ease-in-out infinite;
 }
 
 .level-up-background {
@@ -168,55 +168,5 @@ h2 {
 }
 
 .animate-emojiFloat {
-  animation: emojiFloat 2.5s ease-in-out infinite;
-}
-
-@keyframes popIn {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-popIn {
-  animation: popIn 0.5s ease-out forwards;
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-@keyframes slowEmojiFloat {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-150px) scale(1.2);
-    opacity: 0;
-  }
-}
-
-.animate-slowEmojiFloat {
-  animation: slowEmojiFloat 4s ease-in-out infinite;
+  animation: emojiFloat 4s ease-in-out infinite; /* より遅くする */
 }
