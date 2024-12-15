@@ -35,7 +35,7 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({
 
   if (!show) return null;
 
-  console.log("LevelUpCelebration rendered");
+  console.log("LevelUpCelebration rendered"); // なぜか無限に呼ばれる
 
   return (
     <div className="level-up-overlay pointer-events-auto">
