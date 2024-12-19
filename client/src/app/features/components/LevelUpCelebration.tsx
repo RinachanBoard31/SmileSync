@@ -22,7 +22,7 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({
   newImage,
   onEnd,
 }) => {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(true); // ここ怪しい？
 
   useEffect(() => {
     const timer = setTimeout(() => {
