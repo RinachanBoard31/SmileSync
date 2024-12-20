@@ -28,7 +28,7 @@ const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({
     const timer = setTimeout(() => {
       setShow(false);
       onEnd();
-    }, 5000); // 5秒で終了
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [onEnd]);
