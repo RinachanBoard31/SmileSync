@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build check
 
 on:
   push:
@@ -59,10 +59,10 @@ jobs:
 
       - name: Wait for service to be ready
         run: |
-            source server/.env
-            until nc -z localhost 3000; do
-            sleep 1;
-            done
+          source server/.env
+          until nc -z localhost 3000; do
+          sleep 1;
+          done
 
       - name: Shut down services
         run: docker compose down

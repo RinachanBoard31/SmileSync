@@ -30,6 +30,7 @@ import Food from "./components/Food";
 import TimerDisplay from "./components/TimerDisplay";
 import ConnectedClientsDisplay from "./components/ConnectedClientsDisplay";
 import LevelUpCelebration from "./components/LevelUpCelebration";
+import { createRoot } from "react-dom/client";
 
 const Chat: React.FC = () => {
   const router = useRouter();
@@ -52,7 +53,7 @@ const Chat: React.FC = () => {
   const [foods, setFoods] = useState<{ id: string; foodsIndex: number }[]>([]);
   const [isMeetingActive, setIsMeetingActive] = useState(false); // Serverサイドの会議開始/終了の制御
   const [timer, setTimer] = useState("00:00:00");
-  const [isCelebrating, setIsCelebrating] = useState(false);
+  const [lastCelebratedLevel, setLastCelebratedLevel] = useState(1); // 最後に祝ったレベル
 
   const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -178,15 +179,16 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (currentImage) {
       console.log("Image updated: ", currentImage);
+      if (level > lastCelebratedLevel) {
+        setLastCelebratedLevel(level);
+        handleCelebrate(); // 画像が届き次第、お祝い処理を実行
+      }
     }
   }, [currentImage]);
 
   // Levelが上がったら発火
   useEffect(() => {
-    if (level) {
-      console.log("Level up to : ", level);
-      setIsCelebrating(true);
-    }
+    console.log("Level up to : ", level);
   }, [level]);
 
   // ウィンドウサイズの切り替え
@@ -221,6 +223,20 @@ const Chat: React.FC = () => {
     }
   };
 
+  // LevelUpCelebrationの処理
+  const handleCelebrate = () => {
+    const celebrationRoot = document.createElement("div");
+    document.body.appendChild(celebrationRoot);
+    const root = createRoot(celebrationRoot);
+
+    root.render(<LevelUpCelebration newImage={currentImage} />);
+
+    setTimeout(() => {
+      root.unmount(); // コンポーネントをアンマウント
+      document.body.removeChild(celebrationRoot); // DOM要素を削除
+    }, 4000);
+  };
+
   return (
     <>
       {isLoading ? (
@@ -247,11 +263,6 @@ const Chat: React.FC = () => {
               removeFood={removeFood}
             />
           ))}
-
-          {/* レベルアップ祝い 修理中*/}
-          {/* {isCelebrating && (
-                        <LevelUpCelebration onEnd={() => setIsCelebrating(false)} />
-                    )} */}
 
           {/* 最小表示モード */}
           {isSmallScreen ? (

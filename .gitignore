@@ -22,6 +22,11 @@
 go.work
 go.work.sum
 
+# Go build cache and test cache
+*.cache
+*.testcache
+main
+
 # env file
 .env
 
