@@ -7,71 +7,95 @@ const celebrationEmojis = [
   "🔥",
   "🌟",
   "💥",
-  "💪",
   "🎈",
   "💫",
   "⭐",
+  "💪",
 ];
+
+interface Emoji {
+  id: string;
+  emoji: string;
+  left: number;
+  top: number;
+}
 
 interface LevelUpCelebrationProps {
   newImage: string; // レベルアップで表示する新しい画像
-  onEnd: () => void; // アニメーション終了時のコールバック
 }
 
 const LevelUpCelebration: React.FC<LevelUpCelebrationProps> = ({
   newImage,
-  onEnd,
 }) => {
-  const [show, setShow] = useState(true); // ここ怪しい？
+  const [emojis, setEmojis] = useState<Emoji[]>([]);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShow(false);
-      onEnd();
-    }, 5000);
+    // 絵文字を動的に追加
+    const interval = setInterval(() => {
+      setEmojis((prev) => [
+        ...prev,
+        ...Array.from({ length: 2 }).map(() => ({
+          id: Math.random().toString(36).substring(7),
+          emoji:
+            celebrationEmojis[
+              Math.floor(Math.random() * celebrationEmojis.length)
+            ],
+          left: Math.random() * 100,
+          top: Math.random() * 100,
+        })),
+      ]);
+    }, 100);
 
-    return () => clearTimeout(timer);
-  }, [onEnd]);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setVisible(false);
+    }, 3000);
 
-  if (!show) return null;
-
-  console.log("LevelUpCelebration rendered");
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
 
   return (
-    <div className="level-up-overlay pointer-events-auto">
-      {" "}
-      {/* クリックを透過 */}
-      <div className="level-up-content">
-        {/* Level Up! の文字 */}
-        <h1 className="text-6xl font-bold animate-pulse mb-8 text-center text-white">
-          Level Up!
-        </h1>
+    <div className={`level-up-background ${visible ? "fade-in" : "fade-out"}`}>
+      {/* Level Up!! の文字 */}
+      <h1
+        className={`text-6xl font-bold text-center text-white mb-8 ${
+          visible ? "fade-in" : "fade-out"
+        }`}
+      >
+        Level Up!
+      </h1>
 
-        {/* 新しい画像を中央に大きく表示 */}
-        <div className="relative w-4/5 max-w-screen-md mx-auto">
-          <img
-            src={newImage}
-            alt="New Level Image"
-            className="w-full h-auto object-cover rounded-lg shadow-lg animate-popIn"
-          />
-        </div>
+      {/* 新しい画像 */}
+      <div
+        className={`relative w-4/5 max-w-screen-md mx-auto mb-4 ${
+          visible ? "fade-in" : "fade-out"
+        }`}
+      >
+        <img
+          src={newImage}
+          alt="Level Up!!"
+          className="w-full h-auto object-cover rounded-lg shadow-lg"
+        />
+      </div>
 
-        {/* キラキラエフェクト */}
-        <div className="absolute inset-0 pointer-events-none">
-          {Array.from({ length: 20 }).map((_, index) => (
-            <span
-              key={index}
-              className="absolute text-6xl animate-slowEmojiFloat"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-              }}
-            >
-              {celebrationEmojis[index % celebrationEmojis.length]}
-            </span>
-          ))}
-        </div>
+      {/* 絵文字のエフェクト */}
+      <div className="absolute inset-0 pointer-events-none">
+        {emojis.map((emoji) => (
+          <span
+            key={emoji.id}
+            className="absolute text-10xl emoji-burst"
+            style={{
+              left: `${emoji.left}%`,
+              top: `${emoji.top}%`,
+            }}
+          >
+            {emoji.emoji}
+          </span>
+        ))}
       </div>
     </div>
   );

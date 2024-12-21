@@ -113,39 +113,11 @@ h2 {
   }
 }
 
-.level-up-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.level-up-content {
-  text-align: center;
-  pointer-events: auto; /* 背景のクリックを透過 */
-}
-
-.level-up-emojis {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.emoji-burst {
-  font-size: 3rem;
-  animation: emojiFloat 4s ease-in-out infinite;
-}
-
 .level-up-background {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(0, 0, 0, 0.8); /* 背景を暗くする */
+  background-color: rgba(0, 0, 0, 0.8); /* 背景を暗く */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -154,19 +126,57 @@ h2 {
 
 @keyframes emojiFloat {
   0% {
+    opacity: 0; /* 最初は透明 */
     transform: translateY(0) scale(1);
-    opacity: 1;
   }
-  50% {
-    opacity: 1;
-    transform: translateY(-10px) scale(1.1);
+  20% {
+    opacity: 0.7; /* 徐々に表示 */
+    transform: translateY(-40px) scale(1.1);
+  }
+  80% {
+    opacity: 0.7; /* 表示を維持 */
+    transform: translateY(-160px) scale(1.2);
   }
   100% {
-    transform: translateY(-200px) scale(1.2);
-    opacity: 0;
+    opacity: 0; /* 徐々に透明に */
+    transform: translateY(-200px) scale(1.3);
   }
 }
 
-.animate-emojiFloat {
-  animation: emojiFloat 4s ease-in-out infinite; /* より遅くする */
+.emoji-burst {
+  font-size: 4rem;
+  position: absolute;
+  animation: emojiFloat 3s linear;
+  z-index: 100;
+}
+
+/* フェードイン・フェードアウトのアニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s forwards;
+}
+
+.fade-out {
+  animation: fadeOut 0.5s forwards;
 }
