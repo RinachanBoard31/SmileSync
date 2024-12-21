@@ -122,16 +122,20 @@ const Chat: React.FC = () => {
   // smilePointが変化したら発火
   useEffect(() => {
     if (smilePoint >= 10) {
-      sendSmilePoint(
-        socketRef,
-        clientId,
-        nickname,
-        smilePoint,
-        setSmilePoint,
-        setStatus
-      );
+      if (status === 1) {
+        sendSmilePoint(
+          socketRef,
+          clientId,
+          nickname,
+          smilePoint,
+          setSmilePoint,
+          setStatus
+        );
+      } else {
+        setSmilePoint(10); // 接続できていない場合は、smilePointを上限10に固定
+      }
     }
-  }, [smilePoint, clientId, nickname]); // useEffectフック内で使用している変数が外部の状態に依存しているため、clientIdも依存配列必要
+  }, [smilePoint, clientId, nickname, status]); // useEffectフック内で使用している変数が外部の状態に依存しているため
 
   // smileProbが変化したら発火（処理をdetectSmileに書くと、非同期になり、smileProbが更新された後すぐにsmilePointをチェックしても、更新が反映されていない可能性があるため）
   useEffect(() => {
