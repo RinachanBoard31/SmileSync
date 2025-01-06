@@ -30,12 +30,14 @@ import Food from "./components/Food";
 import TimerDisplay from "./components/TimerDisplay";
 import ConnectedClientsDisplay from "./components/ConnectedClientsDisplay";
 import LevelUpCelebration from "./components/LevelUpCelebration";
+import ImageCarousel from "./components/ImageCarousel";
 import { createRoot } from "react-dom/client";
 
 const Chat: React.FC = () => {
   const router = useRouter();
   const socketRef = useRef<ReconnectingWebSocket | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [messages, setMessages] = useState<string[]>([]); // websocketでやりとりしているmessage
   const [clientsList, setClientsList] = useState<string[]>([]); // websocketに接続しているclientのリスト
@@ -46,7 +48,7 @@ const Chat: React.FC = () => {
   const [totalSmilePoint, setTotalSmilePoint] = useState(0);
   const [totalIdeas, setTotalIdeas] = useState(0);
   const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
-  const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
+  const [imageUrls, setImageUrls] = useState<string[]>(["/img/init.png"]);
   const [level, setLevel] = useState(1);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [hearts, setHearts] = useState<{ id: string }[]>([]);
@@ -54,6 +56,7 @@ const Chat: React.FC = () => {
   const [isMeetingActive, setIsMeetingActive] = useState(false); // Serverサイドの会議開始/終了の制御
   const [timer, setTimer] = useState("00:00:00");
   const [lastCelebratedLevel, setLastCelebratedLevel] = useState(1); // 最後に祝ったレベル
+  const [isAudioInitialized, setIsAudioInitialized] = useState(false);
 
   const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -89,6 +92,28 @@ const Chat: React.FC = () => {
     tfInit();
   }, []);
 
+  // 初期化時にAudioオブジェクトを作成
+  useEffect(() => {
+    audioRef.current = new Audio();
+  }, []);
+
+  // ページ全体のクリックイベントで音声を初期化
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      initializeAudio();
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("touchstart", handleUserInteraction);
+    };
+
+    window.addEventListener("click", handleUserInteraction);
+    window.addEventListener("touchstart", handleUserInteraction);
+
+    return () => {
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("touchstart", handleUserInteraction);
+    };
+  }, []);
+
   // ページ読み込み完了時にローディングを停止
   useEffect(() => {
     if (document.readyState === "complete") {
@@ -111,7 +136,7 @@ const Chat: React.FC = () => {
         setMessages,
         setTotalSmilePoint,
         setTotalIdeas,
-        setCurrentImage,
+        setImageUrls,
         setLevel,
         setClientsList,
         setStatus
@@ -181,14 +206,14 @@ const Chat: React.FC = () => {
 
   // 画像のURLが更新されたら発火
   useEffect(() => {
-    if (currentImage) {
-      console.log("Image updated: ", currentImage);
+    if (imageUrls) {
+      console.log("Image urls updated: ", imageUrls);
       if (level > lastCelebratedLevel) {
         setLastCelebratedLevel(level);
         handleCelebrate(); // 画像が届き次第、お祝い処理を実行
       }
     }
-  }, [currentImage]);
+  }, [imageUrls]);
 
   // Levelが上がったら発火
   useEffect(() => {
@@ -227,13 +252,42 @@ const Chat: React.FC = () => {
     }
   };
 
+  // Audioオブジェクトの初期化
+  const initializeAudio = () => {
+    if (audioRef.current && !isAudioInitialized) {
+      audioRef.current.src = "/sound/levelup.mp3"; // 音声ファイルのパスを設定
+      audioRef.current
+        .play()
+        .then(() => {
+          if (audioRef.current) {
+            audioRef.current.pause(); // 再生が成功した場合に一時停止
+            audioRef.current.currentTime = 0; // 再生位置をリセット
+          }
+          setIsAudioInitialized(true); // 初期化済みとしてフラグを立てる
+        })
+        .catch((error) => {
+          console.error("Audio initialization failed:", error);
+        });
+    }
+  };
+
   // LevelUpCelebrationの処理
   const handleCelebrate = () => {
+    /* レベルアップ音声を再生 */
+    if (audioRef.current && isAudioInitialized) {
+      audioRef.current.play().catch((error) => {
+        console.error("Failed to play level up sound:", error);
+      });
+    }
+
+    /* LevelUpのお祝い画面を表示 */
     const celebrationRoot = document.createElement("div");
     document.body.appendChild(celebrationRoot);
     const root = createRoot(celebrationRoot);
 
-    root.render(<LevelUpCelebration newImage={currentImage} />);
+    root.render(
+      <LevelUpCelebration newImage={imageUrls[imageUrls.length - 1]} />
+    );
 
     setTimeout(() => {
       root.unmount(); // コンポーネントをアンマウント
@@ -294,18 +348,14 @@ const Chat: React.FC = () => {
                   />
                 </div>
 
-                {/* 中央 (Webcam) */}
+                {/* 中央 */}
                 <div className="p-4 border rounded-lg flex justify-center items-center h-full">
                   <Webcam videoRef={videoRef} stream={stream} />
                 </div>
 
-                {/* 右側 (currentImage) */}
+                {/* 右側 */}
                 <div className="p-4 border rounded-lg h-full">
-                  <img
-                    src={currentImage}
-                    alt="Smile Level Image"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
+                  <ImageCarousel imageUrls={imageUrls} />
                 </div>
               </div>
             </div>
@@ -363,11 +413,7 @@ const Chat: React.FC = () => {
 
               {/* 右下 */}
               <div className="p-4 border rounded-lg">
-                <img
-                  src={currentImage}
-                  alt="Smile Level Image"
-                  className="w-full h-full object-cover rounded-lg"
-                />
+                <ImageCarousel imageUrls={imageUrls} />
               </div>
             </div>
           )}
