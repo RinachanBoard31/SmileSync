@@ -30,6 +30,7 @@ import Food from "./components/Food";
 import TimerDisplay from "./components/TimerDisplay";
 import ConnectedClientsDisplay from "./components/ConnectedClientsDisplay";
 import LevelUpCelebration from "./components/LevelUpCelebration";
+import ImageCarousel from "./components/ImageCarousel";
 import { createRoot } from "react-dom/client";
 
 const Chat: React.FC = () => {
@@ -46,7 +47,7 @@ const Chat: React.FC = () => {
   const [totalSmilePoint, setTotalSmilePoint] = useState(0);
   const [totalIdeas, setTotalIdeas] = useState(0);
   const [isLoading, setIsLoading] = useState(true); // ローディング状態を管理
-  const [currentImage, setCurrentImage] = useState<string>("/img/init.png");
+  const [imageUrls, setImageUrls] = useState<string[]>(["/img/init.png"]);
   const [level, setLevel] = useState(1);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [hearts, setHearts] = useState<{ id: string }[]>([]);
@@ -111,7 +112,7 @@ const Chat: React.FC = () => {
         setMessages,
         setTotalSmilePoint,
         setTotalIdeas,
-        setCurrentImage,
+        setImageUrls,
         setLevel,
         setClientsList,
         setStatus
@@ -181,14 +182,14 @@ const Chat: React.FC = () => {
 
   // 画像のURLが更新されたら発火
   useEffect(() => {
-    if (currentImage) {
-      console.log("Image updated: ", currentImage);
+    if (imageUrls) {
+      console.log("Image urls updated: ", imageUrls);
       if (level > lastCelebratedLevel) {
         setLastCelebratedLevel(level);
         handleCelebrate(); // 画像が届き次第、お祝い処理を実行
       }
     }
-  }, [currentImage]);
+  }, [imageUrls]);
 
   // Levelが上がったら発火
   useEffect(() => {
@@ -233,7 +234,9 @@ const Chat: React.FC = () => {
     document.body.appendChild(celebrationRoot);
     const root = createRoot(celebrationRoot);
 
-    root.render(<LevelUpCelebration newImage={currentImage} />);
+    root.render(
+      <LevelUpCelebration newImage={imageUrls[imageUrls.length - 1]} />
+    );
 
     setTimeout(() => {
       root.unmount(); // コンポーネントをアンマウント
@@ -294,18 +297,14 @@ const Chat: React.FC = () => {
                   />
                 </div>
 
-                {/* 中央 (Webcam) */}
+                {/* 中央 */}
                 <div className="p-4 border rounded-lg flex justify-center items-center h-full">
                   <Webcam videoRef={videoRef} stream={stream} />
                 </div>
 
-                {/* 右側 (currentImage) */}
+                {/* 右側 */}
                 <div className="p-4 border rounded-lg h-full">
-                  <img
-                    src={currentImage}
-                    alt="Smile Level Image"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
+                  <ImageCarousel imageUrls={imageUrls} />
                 </div>
               </div>
             </div>
@@ -363,11 +362,7 @@ const Chat: React.FC = () => {
 
               {/* 右下 */}
               <div className="p-4 border rounded-lg">
-                <img
-                  src={currentImage}
-                  alt="Smile Level Image"
-                  className="w-full h-full object-cover rounded-lg"
-                />
+                <ImageCarousel imageUrls={imageUrls} />
               </div>
             </div>
           )}

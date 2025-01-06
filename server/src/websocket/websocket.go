@@ -38,7 +38,7 @@ type Message struct {
 	TotalIdeas      int       `json:"totalIdeas,omitempty"`
 	Level           int       `json:"level,omitempty"`
 	ClientsList     []string  `json:"clientsList,omitempty"`
-	ImageUrl        string    `json:"imageUrl,omitempty"`
+	ImageUrls       []string    `json:"imageUrls,omitempty"`
 }
 
 type Server struct {
@@ -49,12 +49,12 @@ type Server struct {
 	timerBroadcast      chan int64 // 経過時間[s]をClientに送信
 	smileBroadcast      chan int
 	ideaBroadcast       chan int
-	imageBroadcast      chan string
+	imagesBroadcast     chan []string
 	levelBroadcast      chan int
 	messages            []Message
 	totalSmilePoint     int
 	totalIdeas          int
-	currentImageUrl     string
+	imageUrls           []string
 	level               int
 	levelThresholds     []int // レベルの閾値
 	isLevelThresholdSet bool
@@ -69,12 +69,12 @@ func NewServer() *Server {
 		timerBroadcast:      make(chan int64),
 		smileBroadcast:      make(chan int),
 		ideaBroadcast:       make(chan int),
-		imageBroadcast:      make(chan string),
+		imagesBroadcast:     make(chan []string),
 		levelBroadcast:      make(chan int),
 		messages:            make([]Message, 0),
 		totalSmilePoint:     0,
 		totalIdeas:          0,
-		currentImageUrl:     "",
+		imageUrls:           make([]string, 0),
 		level:               1,
 		levelThresholds:     make([]int, 9), // レベルが10段階なので、9つの閾値を設定
 		isLevelThresholdSet: false,
@@ -94,7 +94,7 @@ func (s *Server) handleMeetingStatus(message Message) {
 		go func() {
 			for s.isMeetingActive {
 				// 会議開始後2分後に閾値を設定
-				if !s.isLevelThresholdSet && int64(time.Since(s.meetingStartTime).Seconds()) >= 120 {
+				if !s.isLevelThresholdSet && int64(time.Since(s.meetingStartTime).Seconds()) >= 10 { //////////
 					s.mu.Lock()
 					for i := 0; i < 9; i++ {
 						s.levelThresholds[i] = s.totalSmilePoint * (1 << i) // 1, 2, 4, 8...倍
@@ -185,12 +185,12 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 	s.sendMessage(conn, initialIdea)
 
 	// 現在のImageUrlを新しいClientに送信
-	if s.currentImageUrl != "" {
-		imageUrl := Message{
-			Type:     "imageUrl",
-			ImageUrl: s.currentImageUrl,
+	if len(s.imageUrls) != 0 {
+		imageUrls := Message{
+			Type:     "imageUrls",
+			ImageUrls: s.imageUrls,
 		}
-		s.sendMessage(conn, imageUrl)
+		s.sendMessage(conn, imageUrls)
 	}
 
 	// 現在のLevelを新しいClientに送信
@@ -325,10 +325,10 @@ func (s *Server) handleSmilePoint(message Message) {
 				log.Println("Error inserting smile_image into Firestore: ", err)
 			}
 			s.mu.Lock()
-			s.currentImageUrl = imageUrl
+			s.imageUrls = append(s.imageUrls, imageUrl)
 			s.mu.Unlock()
 			// 他の全てのClientに新しいImageUrlを送信
-			s.imageBroadcast <- s.currentImageUrl
+			s.imagesBroadcast <- s.imageUrls
 		}
 	}
 }
@@ -387,18 +387,18 @@ func (s *Server) HandleMessages() {
 			}
 			s.mu.Unlock()
 			log.Printf("Sent total ideas to all clients: %d ideas\n", totalIdeas)
-		// ImageUrlが送信された場合
-		case imageUrl := <-s.imageBroadcast:
+		// ImageUrlsが送信された場合
+		case imageUrls := <-s.imagesBroadcast:
 			s.mu.Lock()
-			imageUrlMsg := Message{
-				Type:     "imageUrl",
-				ImageUrl: imageUrl,
+			imageUrlsMsg := Message{
+				Type:     "imageUrls",
+				ImageUrls: imageUrls,
 			}
 			for client := range s.clients {
-				s.sendMessage(client, imageUrlMsg)
+				s.sendMessage(client, imageUrlsMsg)
 			}
 			s.mu.Unlock()
-			log.Printf("Sent a new image url to all clients: %s\n", imageUrl)
+			log.Printf("Sent a new image urls to all clients: %s\n", imageUrls)
 		// Levelが送信された場合
 		case level := <-s.levelBroadcast:
 			s.mu.Lock()
