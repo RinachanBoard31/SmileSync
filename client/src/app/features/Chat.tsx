@@ -37,6 +37,7 @@ const Chat: React.FC = () => {
   const router = useRouter();
   const socketRef = useRef<ReconnectingWebSocket | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [messages, setMessages] = useState<string[]>([]); // websocketでやりとりしているmessage
   const [clientsList, setClientsList] = useState<string[]>([]); // websocketに接続しているclientのリスト
@@ -55,6 +56,7 @@ const Chat: React.FC = () => {
   const [isMeetingActive, setIsMeetingActive] = useState(false); // Serverサイドの会議開始/終了の制御
   const [timer, setTimer] = useState("00:00:00");
   const [lastCelebratedLevel, setLastCelebratedLevel] = useState(1); // 最後に祝ったレベル
+  const [isAudioInitialized, setIsAudioInitialized] = useState(false);
 
   const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -88,6 +90,28 @@ const Chat: React.FC = () => {
       await tf.ready();
     };
     tfInit();
+  }, []);
+
+  // 初期化時にAudioオブジェクトを作成
+  useEffect(() => {
+    audioRef.current = new Audio();
+  }, []);
+
+  // ページ全体のクリックイベントで音声を初期化
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      initializeAudio();
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("touchstart", handleUserInteraction);
+    };
+
+    window.addEventListener("click", handleUserInteraction);
+    window.addEventListener("touchstart", handleUserInteraction);
+
+    return () => {
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("touchstart", handleUserInteraction);
+    };
   }, []);
 
   // ページ読み込み完了時にローディングを停止
@@ -228,8 +252,35 @@ const Chat: React.FC = () => {
     }
   };
 
+  // Audioオブジェクトの初期化
+  const initializeAudio = () => {
+    if (audioRef.current && !isAudioInitialized) {
+      audioRef.current.src = "/sound/levelup.mp3"; // 音声ファイルのパスを設定
+      audioRef.current
+        .play()
+        .then(() => {
+          if (audioRef.current) {
+            audioRef.current.pause(); // 再生が成功した場合に一時停止
+            audioRef.current.currentTime = 0; // 再生位置をリセット
+          }
+          setIsAudioInitialized(true); // 初期化済みとしてフラグを立てる
+        })
+        .catch((error) => {
+          console.error("Audio initialization failed:", error);
+        });
+    }
+  };
+
   // LevelUpCelebrationの処理
   const handleCelebrate = () => {
+    /* レベルアップ音声を再生 */
+    if (audioRef.current && isAudioInitialized) {
+      audioRef.current.play().catch((error) => {
+        console.error("Failed to play level up sound:", error);
+      });
+    }
+
+    /* LevelUpのお祝い画面を表示 */
     const celebrationRoot = document.createElement("div");
     document.body.appendChild(celebrationRoot);
     const root = createRoot(celebrationRoot);

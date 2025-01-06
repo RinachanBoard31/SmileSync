@@ -59,8 +59,8 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ imageUrls }) => {
             }}
             className={`absolute top-1/2 left-4 transform -translate-y-1/2 text-5xl font-bold ${
               currentIndex === 0
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-purple-600 cursor-pointer hover:opacity-80"
+                ? "text-gray-400 cursor-not-allowed text-6xl font-bold"
+                : "text-purple-600 cursor-pointer hover:opacity-80 text-6xl font-bold"
             }`}
           />
 
@@ -72,8 +72,8 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ imageUrls }) => {
             }}
             className={`absolute top-1/2 right-4 transform -translate-y-1/2 text-5xl font-bold ${
               currentIndex === imageUrls.length - 1
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-purple-600 cursor-pointer hover:opacity-80"
+                ? "text-gray-400 cursor-not-allowed text-6xl font-bold"
+                : "text-purple-600 cursor-pointer hover:opacity-80 text-6xl font-bold"
             }`}
           />
         </div>
