@@ -9,6 +9,7 @@ export const startConnectWebSocket = (
   setTotalSmilePoint: Dispatch<SetStateAction<number>>,
   setTotalIdeas: Dispatch<SetStateAction<number>>,
   setImageUrls: Dispatch<SetStateAction<string[]>>,
+  setImageAnimalType: Dispatch<SetStateAction<string>>,
   setLevel: Dispatch<SetStateAction<number>>,
   setClientsList: Dispatch<SetStateAction<string[]>>,
   setStatus: Dispatch<SetStateAction<number>> // 0: 接続待ち, 1: 接続完了, 2: 接続終了, 3: 接続エラー
@@ -55,6 +56,8 @@ export const startConnectWebSocket = (
         setTotalIdeas(data.totalIdeas);
       } else if (data.type === "imageUrls") {
         setImageUrls(["/img/init.png", ...data.imageUrls]);
+      } else if (data.type === "imageAnimalType") {
+        setImageAnimalType(data.imageAnimalType);
       } else if (data.type === "level") {
         setLevel(data.level);
       } else if (data.type === "timer") {
@@ -168,6 +171,27 @@ export const sendMeetingStatus = (
     });
     socketRef.current.send(json);
     console.log("Meeting status sent!");
+  } else {
+    setStatus(3);
+  }
+};
+
+export const sendImageAnimalType = (
+  socketRef: React.MutableRefObject<ReconnectingWebSocket | null>,
+  clientId: string,
+  nickname: string,
+  imageAnimalType: string,
+  setStatus: Dispatch<SetStateAction<number>>
+) => {
+  if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+    const json = JSON.stringify({
+      type: "imageAnimalType",
+      client_id: clientId,
+      nickname: nickname,
+      imageAnimalType: imageAnimalType,
+    });
+    socketRef.current.send(json);
+    console.log("Image Animal type sent!");
   } else {
     setStatus(3);
   }

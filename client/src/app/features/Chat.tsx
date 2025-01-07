@@ -11,6 +11,7 @@ import {
   sendSmilePoint,
   sendIdea,
   sendMeetingStatus,
+  sendImageAnimalType,
 } from "./hooks/useWebSocket";
 import { useSmileDetection } from "./hooks/useSmileDetection";
 import { useUserAuthentication } from "./hooks/useUserAuthentication";
@@ -31,6 +32,7 @@ import TimerDisplay from "./components/TimerDisplay";
 import ConnectedClientsDisplay from "./components/ConnectedClientsDisplay";
 import LevelUpCelebration from "./components/LevelUpCelebration";
 import ImageCarousel from "./components/ImageCarousel";
+import AnimalTypeChanger from "./components/AnimalTypeChanger";
 import { createRoot } from "react-dom/client";
 
 const Chat: React.FC = () => {
@@ -57,6 +59,8 @@ const Chat: React.FC = () => {
   const [timer, setTimer] = useState("00:00:00");
   const [lastCelebratedLevel, setLastCelebratedLevel] = useState(1); // 最後に祝ったレベル
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
+  const [imageAnimalType, setImageAnimalType] =
+    useState<string>("golden retriever");
 
   const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -137,6 +141,7 @@ const Chat: React.FC = () => {
         setTotalSmilePoint,
         setTotalIdeas,
         setImageUrls,
+        setImageAnimalType,
         setLevel,
         setClientsList,
         setStatus
@@ -306,6 +311,22 @@ const Chat: React.FC = () => {
             onClick={toggleFullScreen}
             label={isSmallScreen ? "元のサイズに戻す" : "最小表示"}
           />
+
+          {/* 動物変更ボタン */}
+          {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
+            <AnimalTypeChanger
+              onChange={(newAnimalType: string) =>
+                sendImageAnimalType(
+                  socketRef,
+                  clientId,
+                  nickname,
+                  newAnimalType,
+                  setStatus
+                )
+              }
+            />
+          )}
+          {imageAnimalType}
 
           {/* ハート */}
           {hearts.map((heart) => (

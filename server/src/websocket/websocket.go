@@ -38,7 +38,8 @@ type Message struct {
 	TotalIdeas      int       `json:"totalIdeas,omitempty"`
 	Level           int       `json:"level,omitempty"`
 	ClientsList     []string  `json:"clientsList,omitempty"`
-	ImageUrls       []string    `json:"imageUrls,omitempty"`
+	ImageUrls       []string  `json:"imageUrls,omitempty"`
+	ImageAnimalType string    `json:"imageAnimalType,omitempty"`
 }
 
 type Server struct {
@@ -50,6 +51,7 @@ type Server struct {
 	smileBroadcast      chan int
 	ideaBroadcast       chan int
 	imagesBroadcast     chan []string
+	imageAnimalTypeBroadcast chan string
 	levelBroadcast      chan int
 	messages            []Message
 	totalSmilePoint     int
@@ -58,6 +60,7 @@ type Server struct {
 	level               int
 	levelThresholds     []int // レベルの閾値
 	isLevelThresholdSet bool
+	imageAnimalType	    string
 	mu                  sync.Mutex
 }
 
@@ -70,6 +73,7 @@ func NewServer() *Server {
 		smileBroadcast:      make(chan int),
 		ideaBroadcast:       make(chan int),
 		imagesBroadcast:     make(chan []string),
+		imageAnimalTypeBroadcast: make(chan string),
 		levelBroadcast:      make(chan int),
 		messages:            make([]Message, 0),
 		totalSmilePoint:     0,
@@ -78,6 +82,7 @@ func NewServer() *Server {
 		level:               1,
 		levelThresholds:     make([]int, 9), // レベルが10段階なので、9つの閾値を設定
 		isLevelThresholdSet: false,
+		imageAnimalType:     "golden retriever",
 	}
 }
 
@@ -200,6 +205,13 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 	}
 	s.sendMessage(conn, initialLevel)
 
+	// 現在のImageAnimalTypeを新しいClientに送信
+	imageAnimalType := Message{
+		Type:            "imageAnimalType",
+		ImageAnimalType: s.imageAnimalType,
+	}
+	s.sendMessage(conn, imageAnimalType)
+
 	// Clientからのメッセージを待ち受ける
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -219,8 +231,13 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 
 		receivedMsg.Timestamp = time.Now()
 
+		// 会議が開始されていない場合のみ更新を受け付ける
+		if !s.isMeetingActive {
+			if receivedMsg.Type == "imageAnimalType" {
+				s.handleAnimalType(receivedMsg)
+			}
+		} else {
 		// 会議が開始されている場合のみ更新を受け付ける
-		if s.isMeetingActive {
 			if receivedMsg.Type == "message" {
 				s.handleMessage(receivedMsg)
 			} else if receivedMsg.Type == "smilePoint" {
@@ -228,8 +245,6 @@ func (s *Server) HandleClients(w http.ResponseWriter, r *http.Request) {
 			} else if receivedMsg.Type == "idea" {
 				s.handleIdea(receivedMsg)
 			}
-		} else {
-			log.Println("Meeting is not active")
 		}
 
 		// 会議の状態を更新
@@ -312,7 +327,7 @@ func (s *Server) handleSmilePoint(message Message) {
 		s.levelBroadcast <- s.level
 
 		// 新しいImageUrlを生成し、Firestoreに保存
-		prompt, imageUrl, err := generateImageUrl(s.level)
+		prompt, imageUrl, err := generateImageUrl(s.level, s.imageAnimalType)
 		if err == nil && imageUrl != "" {
 			firestoreSmileImageField := firebase.SmileImage{
 				Timestamp:         message.Timestamp,
@@ -349,6 +364,19 @@ func (s *Server) handleIdea(message Message) {
 
 	// 他の全てのClientにIdea数を送信
 	s.ideaBroadcast <- s.totalIdeas
+}
+
+func (s *Server) handleAnimalType(message Message) {
+	s.mu.Lock()
+	if !s.isMeetingActive {
+		s.imageAnimalType = message.ImageAnimalType
+		log.Printf("Image animal type is set to %s\n", s.imageAnimalType)
+	} else {
+		log.Println("Meeting is active, cannot change image animal type")
+	}
+	s.mu.Unlock()
+	// 他の全てのClientに新しいImageAnimalTypeを送信
+	s.imageAnimalTypeBroadcast <- s.imageAnimalType
 }
 
 func (s *Server) HandleMessages() {
@@ -399,6 +427,18 @@ func (s *Server) HandleMessages() {
 			}
 			s.mu.Unlock()
 			log.Printf("Sent a new image urls to all clients: %s\n", imageUrls)
+		// ImageAnimalTypeが送信された場合
+		case imageAnimalType := <-s.imageAnimalTypeBroadcast:
+			s.mu.Lock()
+			imageAnimalTypeMsg := Message{
+				Type:            "imageAnimalType",
+				ImageAnimalType: imageAnimalType,
+			}
+			for client := range s.clients {
+				s.sendMessage(client, imageAnimalTypeMsg)
+			}
+			s.mu.Unlock()
+			log.Printf("Sent a new image animal type to all clients: %s\n", imageAnimalType)
 		// Levelが送信された場合
 		case level := <-s.levelBroadcast:
 			s.mu.Lock()
@@ -458,26 +498,29 @@ func (s *Server) sendMessage(conn *websocket.Conn, msg Message) {
 	}
 }
 
-func generatePromptForLevel(level int) string {
+func generatePromptForLevel(level int, animalType string) string {
 	if level < 1 {
 		level = 1
 	} else if level > 10 {
 		level = 10
 	}
 
-	basePrompt := "high resolution, a single golden retriever, no other animals, no duplicates, no extra figures, no humans, neutral plain background, focus on the dog, natural lighting"
+	basePrompt := fmt.Sprintf(
+        "high resolution, a single %s, no other animals, no duplicates, no extra figures, no humans, neutral plain background, focus on the animal, natural lighting",
+        animalType,
+    )
 
 	descriptions := []string{
-		"A small, tired puppy, looking peaceful but weak, low energy,",
-		"A young puppy, slightly playful, starting to gain energy, healthy,",
-		"A growing puppy, happy and playful, starting to look confident,",
-		"A medium-sized dog, cheerful and active, full of vitality,",
-		"A young adult dog, energetic and happy, strong and confident,",
-		"A well-grown dog, full of energy, playful and intelligent,",
-		"A mature dog, very active, visibly healthy and muscular,",
-		"A highly energetic dog, at peak vitality, very happy and alert,",
-		"An adult golden retriever, vibrant and radiant, full of life,",
-		"A majestic adult dog, the epitome of health and happiness,",
+		"A small, tired animal, looking peaceful but weak, low energy,",
+		"A young animal, slightly playful, starting to gain energy, healthy,",
+		"A growing animal, happy and playful, starting to look confident,",
+		"A medium-sized animal, cheerful and active, full of vitality,",
+		"A young adult animal, energetic and happy, strong and confident,",
+		"A well-grown animal, full of energy, playful and intelligent,",
+		"A mature animal, very active, visibly healthy and muscular,",
+		"A highly energetic animal, at peak vitality, very happy and alert,",
+		"An adult animal, vibrant and radiant, full of life,",
+		"A majestic adult animal, the epitome of health and happiness,",
 	}
 
 	growthEnergyPrompt := fmt.Sprintf(
@@ -486,12 +529,11 @@ func generatePromptForLevel(level int) string {
 	)
 
 	prompt := fmt.Sprintf("%s %s %s", basePrompt, descriptions[level-1], growthEnergyPrompt)
-
 	return prompt
 }
 
-func generateImageUrl(level int) (prompt string, imageUrl string, err error) {
-	generatedPrompt := generatePromptForLevel(level)
+func generateImageUrl(level int, animalType string) (prompt string, imageUrl string, err error) {
+	generatedPrompt := generatePromptForLevel(level, animalType)
 
 	reqBody := map[string]interface{}{
 		"prompt":          generatedPrompt,
