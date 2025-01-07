@@ -11,6 +11,7 @@ import {
   sendSmilePoint,
   sendIdea,
   sendMeetingStatus,
+  sendImageAnimalType,
 } from "./hooks/useWebSocket";
 import { useSmileDetection } from "./hooks/useSmileDetection";
 import { useUserAuthentication } from "./hooks/useUserAuthentication";
@@ -31,6 +32,8 @@ import TimerDisplay from "./components/TimerDisplay";
 import ConnectedClientsDisplay from "./components/ConnectedClientsDisplay";
 import LevelUpCelebration from "./components/LevelUpCelebration";
 import ImageCarousel from "./components/ImageCarousel";
+import AnimalTypeChanger from "./components/AnimalTypeChanger";
+import CurrentAnimalDisplay from "./components/CurrentAnimalDisplay";
 import { createRoot } from "react-dom/client";
 
 const Chat: React.FC = () => {
@@ -57,6 +60,8 @@ const Chat: React.FC = () => {
   const [timer, setTimer] = useState("00:00:00");
   const [lastCelebratedLevel, setLastCelebratedLevel] = useState(1); // 最後に祝ったレベル
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
+  const [imageAnimalType, setImageAnimalType] =
+    useState<string>("golden retriever");
 
   const { smileProb, userExpressions, stream } = useSmileDetection(videoRef);
 
@@ -137,6 +142,7 @@ const Chat: React.FC = () => {
         setTotalSmilePoint,
         setTotalIdeas,
         setImageUrls,
+        setImageAnimalType,
         setLevel,
         setClientsList,
         setStatus
@@ -301,11 +307,31 @@ const Chat: React.FC = () => {
         <LoadingScreen />
       ) : (
         <>
-          {/* ウィンドウサイズ切り替えボタン */}
-          <ResizeButton
-            onClick={toggleFullScreen}
-            label={isSmallScreen ? "元のサイズに戻す" : "最小表示"}
-          />
+          {/* 管理用UI */}
+          <div className="flex flex-row items-center gap-14 fixed bottom-4 right-4 z-50">
+            {/* 動物画像の変更フォーム（Adminのみ表示） */}
+            {nickname === process.env.NEXT_PUBLIC_ADMIN_NICKNAME && (
+              <AnimalTypeChanger
+                onChange={(newAnimalType: string) =>
+                  sendImageAnimalType(
+                    socketRef,
+                    clientId,
+                    nickname,
+                    newAnimalType,
+                    setStatus
+                  )
+                }
+                status={status}
+              />
+            )}
+            {/* 現在の動物表示 */}
+            <CurrentAnimalDisplay animalType={imageAnimalType} />
+            {/* 最小表示切り替えボタン */}
+            <ResizeButton
+              onClick={toggleFullScreen}
+              label={isSmallScreen ? "元に戻す" : "最小表示"}
+            />
+          </div>
 
           {/* ハート */}
           {hearts.map((heart) => (
