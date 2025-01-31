@@ -393,6 +393,7 @@ const Chat: React.FC = () => {
               {/* 左上 */}
               <div className="p-4 border rounded-lg space-y-4">
                 <h1>SmileSync</h1>
+                <h2>※デモ用にペットの成長を本来より速く設定しています。</h2>
                 <div className="flex items-center gap-2">
                   <ConnectionStatusButton status={status} />
                   <TimerDisplay timer={timer} />
